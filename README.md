@@ -106,12 +106,6 @@ docker-compose up -d
 │   │   ├── views/            # 页面视图
 │   │   └── router/           # 路由配置
 │   └── package.json          # 前端依赖
-├── docs/                     # 技术文档
-│   ├── 技术设计文档.md
-│   ├── 接口设计文档.md
-│   ├── 数据库设计文档.md
-│   └── 部署文档.md
-├── plan/                     # 开发计划
 ├── docker-compose.yml        # Docker 部署配置
 └── README.md                 # 项目说明
 ```
