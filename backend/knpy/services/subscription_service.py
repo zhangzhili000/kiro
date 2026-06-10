@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.user_favorite import Subscription
-from knpy.models.user import User
-from knpy.schemas.subscription import SubscriptionCreate, SubscriptionResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.user_favorite import Subscription
+from kiro.models.user import User
+from kiro.schemas.subscription import SubscriptionCreate, SubscriptionResponse
 
 
 def get_subscription(db, user_id: int, target_user_id: int) -> Optional[Subscription]:

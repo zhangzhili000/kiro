@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError, PermissionError
-from knpy.models.comment import Comment
-from knpy.models.document import Document
-from knpy.models.user import User
-from knpy.schemas.comment import CommentCreate, CommentUpdate, CommentResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError, PermissionError
+from kiro.models.comment import Comment
+from kiro.models.document import Document
+from kiro.models.user import User
+from kiro.schemas.comment import CommentCreate, CommentUpdate, CommentResponse
 
 
 def get_comment(db, comment_id: int) -> Optional[Comment]:

@@ -3,12 +3,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.models import Document, UserFavorite, DocumentLike, Comment, Category, Tag, AuditLog
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.models import Document, UserFavorite, DocumentLike, Comment, Category, Tag, AuditLog
 
 router = APIRouter(prefix="/statistics", tags=["统计分析"])
 

@@ -42,7 +42,7 @@ def list_documents(
 
         category_name = None
         if doc.category_id:
-            from knpy.models.category import Category
+            from kiro.models.category import Category
             category = db.query(Category).filter(Category.id == doc.category_id).first()
             category_name = category.name if category else None
 
@@ -77,7 +77,7 @@ def list_trash(db: Session = Depends(get_db)):
 
         category_name = None
         if doc.category_id:
-            from knpy.models.category import Category
+            from kiro.models.category import Category
             category = db.query(Category).filter(Category.id == doc.category_id).first()
             category_name = category.name if category else None
 
@@ -115,14 +115,14 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
 
     category_name = None
     if document.category_id:
-        from knpy.models.category import Category
+        from kiro.models.category import Category
         category = db.query(Category).filter(Category.id == document.category_id).first()
         category_name = category.name if category else None
 
     tags = []
     document_tags = db.query(DocumentTag).filter(DocumentTag.document_id == document.id).all()
     for doc_tag in document_tags:
-        from knpy.models.category import Tag
+        from kiro.models.category import Tag
         tag = db.query(Tag).filter(Tag.id == doc_tag.tag_id).first()
         if tag:
             tags.append(tag.name)
@@ -166,20 +166,20 @@ def create_document(document: DocumentCreate, db: Session = Depends(get_db), cur
         db.commit()
 
     # 异步创建索引
-    from knpy.services.async_task_service import async_task_service
+    from kiro.services.async_task_service import async_task_service
     async_task_service.create_document_index(db_document.id)
 
     author_name = current_user.username
     category_name = None
     if db_document.category_id:
-        from knpy.models.category import Category
+        from kiro.models.category import Category
         category = db.query(Category).filter(Category.id == db_document.category_id).first()
         category_name = category.name if category else None
 
     tags = []
     if document.tag_ids:
         for tag_id in document.tag_ids:
-            from knpy.models.category import Tag
+            from kiro.models.category import Tag
             tag = db.query(Tag).filter(Tag.id == tag_id).first()
             if tag:
                 tags.append(tag.name)
@@ -235,7 +235,7 @@ def update_document(document_id: int, document_update: DocumentUpdate, db: Sessi
     if content_updated:
         document.status = "draft"
         db.commit()
-        from knpy.services.async_task_service import async_task_service
+        from kiro.services.async_task_service import async_task_service
         async_task_service.create_document_index(document_id)
 
     author_name = None
@@ -245,14 +245,14 @@ def update_document(document_id: int, document_update: DocumentUpdate, db: Sessi
 
     category_name = None
     if document.category_id:
-        from knpy.models.category import Category
+        from kiro.models.category import Category
         category = db.query(Category).filter(Category.id == document.category_id).first()
         category_name = category.name if category else None
 
     tags = []
     document_tags = db.query(DocumentTag).filter(DocumentTag.document_id == document.id).all()
     for doc_tag in document_tags:
-        from knpy.models.category import Tag
+        from kiro.models.category import Tag
         tag = db.query(Tag).filter(Tag.id == doc_tag.tag_id).first()
         if tag:
             tags.append(tag.name)
@@ -287,7 +287,7 @@ def delete_document(document_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="文档不存在")
 
     document.is_deleted = True
-    from knpy.core.timezone_utils import get_beijing_time
+    from kiro.core.timezone_utils import get_beijing_time
     document.deleted_at = get_beijing_time()
     db.commit()
     return {"message": "文档已移入回收站"}
@@ -458,7 +458,7 @@ def batch_delete_documents(
     current_user: User = Depends(get_current_user)
 ):
     """批量删除文档（移入回收站）"""
-    from knpy.core.timezone_utils import get_beijing_time
+    from kiro.core.timezone_utils import get_beijing_time
     
     documents = db.query(Document).filter(Document.id.in_(document_ids)).all()
     deleted_count = 0
@@ -561,7 +561,7 @@ def batch_permanent_delete(
 @router.get("/{document_id}/index-status", response_model=DocumentIndexStatusResponse)
 def get_document_index_status(document_id: int):
     """获取文档索引生成状态"""
-    from knpy.services.async_task_service import async_task_service
+    from kiro.services.async_task_service import async_task_service
     
     status = async_task_service.get_index_status(document_id)
     
@@ -586,7 +586,7 @@ def reindex_document(document_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     # 异步创建索引
-    from knpy.services.async_task_service import async_task_service
+    from kiro.services.async_task_service import async_task_service
     async_task_service.create_document_index(document_id)
     
     return {"message": "索引重新生成任务已启动"}
@@ -595,7 +595,7 @@ def reindex_document(document_id: int, db: Session = Depends(get_db)):
 @router.get("/{document_id}/chunks")
 def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
     """获取文档索引chunks"""
-    from knpy.models.ai_models import DocumentVector
+    from kiro.models.ai_models import DocumentVector
     
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:

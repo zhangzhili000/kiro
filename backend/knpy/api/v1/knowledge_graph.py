@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.schemas.knowledge_graph import (
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.schemas.knowledge_graph import (
     GraphData, ShortestPathRequest, ShortestPathResponse, RelatedNodesRequest
 )
-from knpy.services.knowledge_graph_service import (
+from kiro.services.knowledge_graph_service import (
     build_knowledge_graph, find_shortest_path, get_related_nodes
 )
 

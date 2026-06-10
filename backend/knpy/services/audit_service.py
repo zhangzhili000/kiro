@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.models.notification import AuditLog
-from knpy.schemas.audit import AuditLogCreate, AuditLogResponse
+from kiro.core.database import SessionLocal
+from kiro.models.notification import AuditLog
+from kiro.schemas.audit import AuditLogCreate, AuditLogResponse
 
 
 def create_audit_log(db, audit_log_create: AuditLogCreate) -> AuditLog:

@@ -5,12 +5,12 @@ from datetime import datetime
 import os
 import uuid
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.models.attachment import Attachment
-from knpy.models.document import Document
-from knpy.schemas.attachment import AttachmentResponse
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.models.attachment import Attachment
+from kiro.models.document import Document
+from kiro.schemas.attachment import AttachmentResponse
 
 router = APIRouter(prefix="/attachments", tags=["附件管理"])
 

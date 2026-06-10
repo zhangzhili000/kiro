@@ -28,7 +28,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    from knpy.models import Department
+    from kiro.models import Department
     department_name = None
     if current_user.department_id:
         dept = db.query(Department).filter(Department.id == current_user.department_id).first()

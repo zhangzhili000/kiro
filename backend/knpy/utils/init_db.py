@@ -1,6 +1,6 @@
 from sqlalchemy import inspect
-from knpy.core.database import engine, Base
-from knpy.models import (
+from kiro.core.database import engine, Base
+from kiro.models import (
     User, Department, Document, DocumentVersion, DocumentShare,
     Category, Tag, DocumentTag, Comment, UserFavorite, DocumentLike,
     Subscription, Notification, AuditLog, SearchHistory, Role,
@@ -48,8 +48,8 @@ def init_db():
 
 
 def create_admin_user():
-    from knpy.core.security import get_password_hash
-    from knpy.core.database import SessionLocal
+    from kiro.core.security import get_password_hash
+    from kiro.core.database import SessionLocal
 
     db = SessionLocal()
     try:
@@ -74,7 +74,7 @@ def create_admin_user():
 
 
 def create_default_roles():
-    from knpy.core.database import SessionLocal
+    from kiro.core.database import SessionLocal
 
     db = SessionLocal()
     try:
@@ -99,7 +99,7 @@ def create_default_roles():
 
 
 def create_default_ai_config():
-    from knpy.core.database import SessionLocal
+    from kiro.core.database import SessionLocal
 
     db = SessionLocal()
     try:

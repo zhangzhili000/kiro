@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.document import Document
-from knpy.models.notification import SearchHistory
-from knpy.schemas.document import DocumentResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.document import Document
+from kiro.models.notification import SearchHistory
+from kiro.schemas.document import DocumentResponse
 
 
 def search_documents(db, query: str, category_id: Optional[int] = None, sort_by: str = 'relevance', skip: int = 0, limit: int = 100) -> List[Document]:

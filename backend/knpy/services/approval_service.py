@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 
-from knpy.models.approval import ApprovalTemplate, ApprovalRecord, ApprovalHistory
-from knpy.models.document import Document
-from knpy.schemas.approval import ApprovalTemplateCreate, ApprovalTemplateUpdate, ApprovalRecordCreate
+from kiro.models.approval import ApprovalTemplate, ApprovalRecord, ApprovalHistory
+from kiro.models.document import Document
+from kiro.schemas.approval import ApprovalTemplateCreate, ApprovalTemplateUpdate, ApprovalRecordCreate
 
 
 def get_templates(db: Session) -> List[ApprovalTemplate]:
@@ -80,7 +80,7 @@ def submit_for_approval(db: Session, document_id: int, user_id: int, template_id
 
 def get_pending_approvals(db: Session, user_id: int) -> List[ApprovalRecord]:
     """获取用户待审批的文档"""
-    from knpy.models.user import User
+    from kiro.models.user import User
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return []

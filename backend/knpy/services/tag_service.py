@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.category import Tag, DocumentTag
-from knpy.schemas.tag import TagCreate, TagUpdate, TagResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.category import Tag, DocumentTag
+from kiro.schemas.tag import TagCreate, TagUpdate, TagResponse
 
 
 def get_tag(db, tag_id: int) -> Optional[Tag]:

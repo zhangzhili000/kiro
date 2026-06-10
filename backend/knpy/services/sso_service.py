@@ -6,7 +6,7 @@ import httpx
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 
 from ..models.user import User
 from ..models.department import Department

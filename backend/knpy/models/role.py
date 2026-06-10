@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from datetime import datetime
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 from ..core.database import Base
 
 

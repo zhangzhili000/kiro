@@ -9,14 +9,14 @@ import asyncio
 import json
 import time
 
-from knpy.core.database import get_db
-from knpy.core.config import settings
-from knpy.services.ai_service import faiss_service
-from knpy.services.model_service import DynamicAIClient
-from knpy.services.document_parser_service import document_parser
-from knpy.models.document import Document
-from knpy.models.ai_models import DocumentVector, AIConversation
-from knpy.schemas.ai_schemas import (
+from kiro.core.database import get_db
+from kiro.core.config import settings
+from kiro.services.ai_service import faiss_service
+from kiro.services.model_service import DynamicAIClient
+from kiro.services.document_parser_service import document_parser
+from kiro.models.document import Document
+from kiro.models.ai_models import DocumentVector, AIConversation
+from kiro.schemas.ai_schemas import (
     DocumentConvertRequest,
     DocumentConvertResponse,
     DocumentProcessRequest,
@@ -44,10 +44,10 @@ from knpy.schemas.ai_schemas import (
     PromptTemplateResponse,
     AIConfigResponse
 )
-from knpy.models.ai_models import AIConfig, PromptTemplate
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.models.ai_models import AIConfig, PromptTemplate
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.core.timezone_utils import get_beijing_time
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 

@@ -2,12 +2,12 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from knpy.core.exceptions import NotFoundError
-from knpy.models.document_permission import DocumentPermission
-from knpy.models.document import Document
-from knpy.models.user import User
-from knpy.models.department import Department
-from knpy.schemas.document_permission import DocumentPermissionCreate, DocumentPermissionsUpdate
+from kiro.core.exceptions import NotFoundError
+from kiro.models.document_permission import DocumentPermission
+from kiro.models.document import Document
+from kiro.models.user import User
+from kiro.models.department import Department
+from kiro.schemas.document_permission import DocumentPermissionCreate, DocumentPermissionsUpdate
 
 
 def get_document_permission(db: Session, permission_id: int) -> Optional[DocumentPermission]:

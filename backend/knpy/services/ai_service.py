@@ -3,7 +3,7 @@ import json
 import dashscope
 from typing import List, Dict, Optional, Any
 from fastapi import HTTPException
-from knpy.core.config import settings
+from kiro.core.config import settings
 
 
 class DashScopeClient:

@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.notification import Notification
-from knpy.models.user import User
-from knpy.schemas.notification import NotificationCreate, NotificationResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.notification import Notification
+from kiro.models.user import User
+from kiro.schemas.notification import NotificationCreate, NotificationResponse
 
 
 def get_notification(db, notification_id: int) -> Optional[Notification]:

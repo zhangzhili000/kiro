@@ -9,16 +9,16 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from knpy.core.database import engine, Base
-from knpy.models import *
+from kiro.core.database import engine, Base
+from kiro.models import *
 
 print("Creating database tables...")
 Base.metadata.create_all(bind=engine)
 print("Database tables created successfully!")
 
-from knpy.core.database import SessionLocal
-from knpy.core.security import get_password_hash
-from knpy.models import User, Role
+from kiro.core.database import SessionLocal
+from kiro.core.security import get_password_hash
+from kiro.models import User, Role
 
 db = SessionLocal()
 try:

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 from typing import Optional
 
 import bcrypt

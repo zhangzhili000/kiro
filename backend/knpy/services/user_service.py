@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.user import User
-from knpy.models.department import Department
-from knpy.schemas.user import UserCreate, UserUpdate, UserResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.user import User
+from kiro.models.department import Department
+from kiro.schemas.user import UserCreate, UserUpdate, UserResponse
 
 
 def get_user(db, user_id: int) -> Optional[User]:
@@ -16,7 +16,7 @@ def get_users(db, skip: int = 0, limit: int = 100) -> List[User]:
 
 
 def create_user(db, user_create: UserCreate) -> User:
-    from knpy.services.auth_service import get_password_hash
+    from kiro.services.auth_service import get_password_hash
     
     hashed_password = get_password_hash(user_create.password)
     user = User(

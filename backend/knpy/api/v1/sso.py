@@ -7,10 +7,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from knpy.core.database import get_db
-from knpy.core.security import create_access_token
-from knpy.schemas.user import Token
-from knpy.services.sso_service import DingTalkSSOService, WeChatWorkSSOService, FeishuSSOService
+from kiro.core.database import get_db
+from kiro.core.security import create_access_token
+from kiro.schemas.user import Token
+from kiro.services.sso_service import DingTalkSSOService, WeChatWorkSSOService, FeishuSSOService
 
 router = APIRouter(prefix="/sso", tags=["SSO登录"])
 

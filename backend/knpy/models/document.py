@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
-from knpy.core.database import Base
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.database import Base
+from kiro.core.timezone_utils import get_beijing_time
 
 class Document(Base):
     __tablename__ = "documents"

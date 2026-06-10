@@ -55,15 +55,15 @@
 
 #### 1. 克隆项目
 ```bash
-git clone https://github.com/zhangzhili000/knpy.git
-cd knpy
+git clone https://github.com/zhangzhili000/kiro.git
+cd kiro
 ```
 
 #### 2. 启动后端服务
 ```bash
 cd backend
 pip install -r requirements.txt
-python -m uvicorn knpy.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn kiro.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### 3. 启动前端服务
@@ -88,7 +88,7 @@ docker-compose up -d
 ```
 .
 ├── backend/                    # 后端代码
-│   ├── knpy/                  # 应用主目录
+│   ├── kiro/                  # 应用主目录
 │   │   ├── api/              # API 路由
 │   │   │   └── v1/           # 版本化 API
 │   │   ├── core/             # 核心配置

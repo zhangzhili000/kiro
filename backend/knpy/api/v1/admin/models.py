@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.models.ai_models import ModelConfig
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.models.ai_models import ModelConfig
+from kiro.core.timezone_utils import get_beijing_time
 from typing import List
 
 router = APIRouter(prefix="/admin/models", tags=["管理员-模型管理"])

@@ -4,7 +4,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Enum, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 from ..core.database import Base
 
 

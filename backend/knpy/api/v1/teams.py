@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.models.team import Team, TeamMember, TeamDocument
-from knpy.models.document import Document
-from knpy.schemas.team import (
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.models.team import Team, TeamMember, TeamDocument
+from kiro.models.document import Document
+from kiro.schemas.team import (
     TeamCreate, TeamUpdate, TeamResponse, TeamMemberResponse, TeamDocumentResponse
 )
 

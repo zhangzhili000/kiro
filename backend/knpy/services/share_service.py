@@ -2,11 +2,11 @@ from typing import Optional
 import io
 import markdown
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError, PermissionError
-from knpy.models.document import Document, DocumentShare
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError, PermissionError
+from kiro.models.document import Document, DocumentShare
 
 
 def export_document_as_markdown(db, document_id: int, user_id: int) -> bytes:

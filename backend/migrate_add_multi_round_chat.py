@@ -16,7 +16,7 @@ DB_CONFIG = {
     'port': '5432',
     'user': 'postgres',
     'password': '123456',
-    'dbname': 'knpy'
+    'dbname': 'kiro'
 }
 
 MIGRATION_SQL = """

@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError, PermissionError
-from knpy.models.document import Document
-from knpy.models.document_version import DocumentVersion, DocumentShare
-from knpy.models.category import Category
-from knpy.models.category import DocumentTag
-from knpy.models.user import User
-from knpy.schemas.document import DocumentCreate, DocumentUpdate, DocumentResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError, PermissionError
+from kiro.models.document import Document
+from kiro.models.document_version import DocumentVersion, DocumentShare
+from kiro.models.category import Category
+from kiro.models.category import DocumentTag
+from kiro.models.user import User
+from kiro.schemas.document import DocumentCreate, DocumentUpdate, DocumentResponse
 
 
 def get_document(db, document_id: int) -> Optional[Document]:

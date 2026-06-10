@@ -16,7 +16,7 @@ DB_CONFIG = {
     'port': '5432',
     'user': 'postgres',
     'password': '123456',
-    'dbname': 'knpy'
+    'dbname': 'kiro'
 }
 
 # 建表SQL - 按依赖顺序排列

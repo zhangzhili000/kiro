@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.schemas.approval import (
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.schemas.approval import (
     ApprovalTemplateCreate, ApprovalTemplateUpdate, ApprovalTemplateResponse,
     ApprovalRecordCreate, ApprovalRecordResponse, ApprovalAction, ApprovalHistoryResponse
 )
-from knpy.services.approval_service import (
+from kiro.services.approval_service import (
     get_templates, get_template, create_template, update_template, delete_template,
     submit_for_approval, get_pending_approvals, approve_document, reject_document,
     get_approval_history

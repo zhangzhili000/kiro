@@ -2,15 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.schemas.document_template import (
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.schemas.document_template import (
     DocumentTemplateCreate,
     DocumentTemplateUpdate,
     DocumentTemplateResponse
 )
-from knpy.services.document_template_service import (
+from kiro.services.document_template_service import (
     get_templates,
     get_template,
     create_template,

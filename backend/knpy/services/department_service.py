@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.department import Department
-from knpy.schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.department import Department
+from kiro.schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
 
 
 def get_department(db, department_id: int) -> Optional[Department]:

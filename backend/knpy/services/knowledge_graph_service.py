@@ -2,10 +2,10 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from collections import deque
 
-from knpy.models.document import Document
-from knpy.models.category import Category, Tag
-from knpy.models.user import User
-from knpy.schemas.knowledge_graph import (
+from kiro.models.document import Document
+from kiro.models.category import Category, Tag
+from kiro.models.user import User
+from kiro.schemas.knowledge_graph import (
     GraphData, GraphNode, GraphEdge, PathNode, PathEdge, ShortestPathResponse
 )
 

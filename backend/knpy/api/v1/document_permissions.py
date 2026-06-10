@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from knpy.core.database import get_db
-from knpy.api.v1.users import get_current_user
-from knpy.models.user import User
-from knpy.models.document import Document
-from knpy.schemas.document_permission import DocumentPermissionResponse, DocumentPermissionsUpdate
-from knpy.services.document_permission_service import (
+from kiro.core.database import get_db
+from kiro.api.v1.users import get_current_user
+from kiro.models.user import User
+from kiro.models.document import Document
+from kiro.schemas.document_permission import DocumentPermissionResponse, DocumentPermissionsUpdate
+from kiro.services.document_permission_service import (
     get_document_permissions_with_names,
     update_document_permissions,
     check_document_edit_permission

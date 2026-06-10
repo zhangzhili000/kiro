@@ -16,7 +16,7 @@ class ModelConfigService:
     
     def _load_configs(self):
         """从数据库加载所有模型配置"""
-        from knpy.models.ai_models import ModelConfig
+        from kiro.models.ai_models import ModelConfig
         
         try:
             configs = self.db.query(ModelConfig).filter(ModelConfig.status == "active").all()
@@ -42,7 +42,7 @@ class ModelConfigService:
                 return config
         
         # 如果缓存中没有，从数据库查询
-        from knpy.models.ai_models import ModelConfig
+        from kiro.models.ai_models import ModelConfig
         
         try:
             config = self.db.query(ModelConfig).filter(

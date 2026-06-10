@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    DATABASE_URL: str = "postgresql://postgres:123456@localhost:5432/knpy"
+    DATABASE_URL: str = "postgresql://postgres:123456@localhost:5432/kiro"
     REDIS_URL: str = "redis://localhost:6379/0"
 
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "knpy-documents"
+    MINIO_BUCKET: str = "kiro-documents"
 
     CORS_ORIGINS: list = ["http://localhost:5120", "http://localhost:3000"]
 

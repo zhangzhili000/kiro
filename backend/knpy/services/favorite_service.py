@@ -1,12 +1,12 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.user_favorite import UserFavorite, DocumentLike
-from knpy.models.document import Document
-from knpy.models.user import User
-from knpy.schemas.favorite import FavoriteCreate, FavoriteResponse
-from knpy.schemas.like import LikeCreate, LikeResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.user_favorite import UserFavorite, DocumentLike
+from kiro.models.document import Document
+from kiro.models.user import User
+from kiro.schemas.favorite import FavoriteCreate, FavoriteResponse
+from kiro.schemas.like import LikeCreate, LikeResponse
 
 
 def get_favorite(db, user_id: int, document_id: int) -> Optional[UserFavorite]:

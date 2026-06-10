@@ -4,12 +4,12 @@ import os
 import threading
 from typing import Optional
 from datetime import datetime
-from knpy.core.timezone_utils import get_beijing_time
-from knpy.core.config import settings
-from knpy.core.database import SessionLocal
-from knpy.models.document import Document
-from knpy.services.model_service import DynamicAIClient
-from knpy.services.ai_service import faiss_service
+from kiro.core.timezone_utils import get_beijing_time
+from kiro.core.config import settings
+from kiro.core.database import SessionLocal
+from kiro.models.document import Document
+from kiro.services.model_service import DynamicAIClient
+from kiro.services.ai_service import faiss_service
 
 
 class AsyncTaskService:

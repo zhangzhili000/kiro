@@ -28,7 +28,7 @@ pip install psycopg2-binary
 4. 配置环境变量：
 创建 `.env` 文件，内容如下：
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/knpy
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kiro
 SECRET_KEY=your-secret-key-change-in-production
 ```
 
@@ -36,20 +36,20 @@ SECRET_KEY=your-secret-key-change-in-production
 
 1. 创建数据库：
 ```sql
-CREATE DATABASE knpy;
+CREATE DATABASE kiro;
 ```
 
 2. 初始化表结构和默认数据：
 ```bash
 cd backend
-python -m knpy.utils.init_db
+python -m kiro.utils.init_db
 ```
 
 ## 运行
 
 ```bash
 cd backend
-uvicorn knpy.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn kiro.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 访问 http://localhost:8000/docs 查看API文档。
@@ -63,7 +63,7 @@ uvicorn knpy.main:app --reload --host 0.0.0.0 --port 8000
 
 ```
 backend/
-├── knpy/
+├── kiro/
 │   ├── api/v1/       # API路由
 │   ├── core/         # 核心配置
 │   ├── models/       # 数据库模型

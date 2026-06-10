@@ -1,9 +1,9 @@
 import json
 from typing import List, Optional
 
-from knpy.core.exceptions import NotFoundError
-from knpy.models.role import Role
-from knpy.schemas.role import RoleCreate, RoleUpdate
+from kiro.core.exceptions import NotFoundError
+from kiro.models.role import Role
+from kiro.schemas.role import RoleCreate, RoleUpdate
 
 
 def get_role(db, role_id: int) -> Optional[Role]:

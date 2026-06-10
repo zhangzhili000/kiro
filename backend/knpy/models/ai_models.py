@@ -1,8 +1,8 @@
 import uuid
 from sqlalchemy import Column, Text, JSON, TIMESTAMP, ForeignKey, Integer, LargeBinary, String
 from datetime import datetime
-from knpy.core.timezone_utils import get_beijing_time
-from knpy.core.database import Base
+from kiro.core.timezone_utils import get_beijing_time
+from kiro.core.database import Base
 
 
 class DocumentVector(Base):

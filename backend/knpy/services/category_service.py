@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import NotFoundError
-from knpy.models.category import Category
-from knpy.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import NotFoundError
+from kiro.models.category import Category
+from kiro.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 
 
 def get_category(db, category_id: int) -> Optional[Category]:

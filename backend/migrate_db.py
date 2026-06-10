@@ -9,8 +9,8 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from knpy.core.database import engine, Base
-from knpy.models import *
+from kiro.core.database import engine, Base
+from kiro.models import *
 
 print("Recreating all database tables...")
 Base.metadata.drop_all(bind=engine)

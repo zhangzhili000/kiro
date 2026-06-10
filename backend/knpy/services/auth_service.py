@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
-from knpy.core.timezone_utils import get_beijing_time
+from kiro.core.timezone_utils import get_beijing_time
 from typing import Optional
 
 import bcrypt
 from jose import JWTError, jwt
 
-from knpy.core.config import settings
-from knpy.core.database import SessionLocal
-from knpy.core.exceptions import AuthenticationError
-from knpy.models.user import User
-from knpy.schemas.user import TokenData, UserCreate, UserUpdate
+from kiro.core.config import settings
+from kiro.core.database import SessionLocal
+from kiro.core.exceptions import AuthenticationError
+from kiro.models.user import User
+from kiro.schemas.user import TokenData, UserCreate, UserUpdate
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from knpy.models.document_template import DocumentTemplate
-from knpy.schemas.document_template import DocumentTemplateCreate, DocumentTemplateUpdate
+from kiro.models.document_template import DocumentTemplate
+from kiro.schemas.document_template import DocumentTemplateCreate, DocumentTemplateUpdate
 
 
 def get_templates(db: Session, category_id: Optional[int] = None, is_public: Optional[bool] = None) -> List[DocumentTemplate]:
