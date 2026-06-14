@@ -489,7 +489,7 @@ class DocumentParser:
                     html_parts.append(f'<p style="text-align: center; color: #999; font-size: 12px;">第 {img["page"]} 页</p>')
                 html_parts.append('</div>')
         
-        return f'<div class="document-content pdf-document">{''.join(html_parts)}</div>'
+        return f'<div class="document-content pdf-document">{"".join(html_parts)}</div>'
     
     def _md_to_html(self, content: str) -> str:
         """Markdown转HTML"""

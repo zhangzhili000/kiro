@@ -919,8 +919,8 @@ async def chat_stream(
                 pending_conversation.answer = "对话已被用户终止。"
                 pending_conversation.status = "completed"
                 db.commit()
-                yield f"data: {json.dumps({
-                    'type': StreamEventType.DONE, 
+                done_data = {
+                    'type': StreamEventType.DONE,
                     'data': {
                         'conversation_id': pending_conversation.id,
                         'conversation_uuid': conversation_uuid,
@@ -931,7 +931,8 @@ async def chat_stream(
                         'duration': int((time.time() - start_time) * 1000),
                         'processing_steps': steps_info
                     }
-                })}\n\n"
+                }
+                yield f"data: {json.dumps(done_data)}\n\n"
                 return
             
             context = None
@@ -963,8 +964,8 @@ async def chat_stream(
                     answer_time = get_beijing_time()
                     duration = int((time.time() - start_time) * 1000)
                     
-                    yield f"data: {json.dumps({
-                        'type': StreamEventType.DONE, 
+                    done_data = {
+                        'type': StreamEventType.DONE,
                         'data': {
                             'conversation_id': None,
                             'conversation_uuid': None,
@@ -975,7 +976,8 @@ async def chat_stream(
                             'duration': duration,
                             'processing_steps': steps_info
                         }
-                    })}\n\n"
+                    }
+                    yield f"data: {json.dumps(done_data)}\n\n"
                     return
             
             if use_knowledge_base:
@@ -1103,8 +1105,8 @@ async def chat_stream(
                 pending_conversation.answer = "对话已被用户终止。"
                 pending_conversation.status = "completed"
                 db.commit()
-                yield f"data: {json.dumps({
-                    'type': StreamEventType.DONE, 
+                done_data = {
+                    'type': StreamEventType.DONE,
                     'data': {
                         'conversation_id': pending_conversation.id,
                         'conversation_uuid': conversation_uuid,
@@ -1115,7 +1117,8 @@ async def chat_stream(
                         'duration': int((time.time() - start_time) * 1000),
                         'processing_steps': steps_info
                     }
-                })}\n\n"
+                }
+                yield f"data: {json.dumps(done_data)}\n\n"
                 return
             
             if has_relevant_content or is_system_question:
@@ -1157,8 +1160,8 @@ async def chat_stream(
                     pending_conversation.answer = "对话已被用户终止。"
                     pending_conversation.status = "completed"
                     db.commit()
-                    yield f"data: {json.dumps({
-                        'type': StreamEventType.DONE, 
+                    done_data = {
+                        'type': StreamEventType.DONE,
                         'data': {
                             'conversation_id': pending_conversation.id,
                             'conversation_uuid': conversation_uuid,
@@ -1169,7 +1172,8 @@ async def chat_stream(
                             'duration': int((time.time() - start_time) * 1000),
                             'processing_steps': steps_info
                         }
-                    })}\n\n"
+                    }
+                    yield f"data: {json.dumps(done_data)}\n\n"
                     return
                 
                 # 步骤 5: AI 回答
@@ -1419,8 +1423,8 @@ async def chat_stream(
             db.commit()
             
             # 发送完成信号，包含额外信息
-            yield f"data: {json.dumps({
-                'type': StreamEventType.DONE, 
+            done_data = {
+                'type': StreamEventType.DONE,
                 'data': {
                     'conversation_id': conversation.id,
                     'conversation_uuid': conversation.conversation_uuid,
@@ -1431,7 +1435,8 @@ async def chat_stream(
                     'duration': duration,
                     'processing_steps': steps_info
                 }
-            })}\n\n"
+            }
+            yield f"data: {json.dumps(done_data)}\n\n"
             
         except Exception as e:
             db.rollback()
