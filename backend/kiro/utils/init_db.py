@@ -4,7 +4,8 @@ from kiro.models import (
     User, Department, Document, DocumentVersion, DocumentShare,
     Category, Tag, DocumentTag, Comment, UserFavorite, DocumentLike,
     Subscription, Notification, AuditLog, SearchHistory, Role,
-    AIConfig, PromptTemplate, DocumentVector, AIConversation
+    AIConfig, PromptTemplate, DocumentVector, AIConversation,
+    DocumentTemplate, ModelConfig
 )
 
 
@@ -35,6 +36,8 @@ def init_db():
         AIConversation.__table__,
         AIConfig.__table__,
         PromptTemplate.__table__,
+        DocumentTemplate.__table__,
+        ModelConfig.__table__,
     ]
 
     for table in tables_to_create:
