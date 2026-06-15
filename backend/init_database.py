@@ -397,7 +397,7 @@ INSERT INTO roles (name, code, description, permissions)
 VALUES 
     ('管理员', 'admin', '系统管理员，拥有所有权限', '["*"]'),
     ('编辑者', 'editor', '内容编辑者，可以创建和编辑文档', '["document.create", "document.edit", "document.delete"]'),
-    ('普通用户', 'user', '普通用户，可以查看文档', '["document.view"]')
+    ('普通用户', 'user', '普通用户，可以查看文档', '["document.read"]')
 ON CONFLICT (code) DO NOTHING;
 
 -- 管理员用户 (密码: admin123)

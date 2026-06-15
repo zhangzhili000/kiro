@@ -15,7 +15,7 @@
           <el-checkbox v-model="form.rememberMe">记住我</el-checkbox>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">登录</el-button>
+          <el-button type="primary" @click="handleLogin" :loading="loading" :disabled="!isFormValid" style="width: 100%">登录</el-button>
         </el-form-item>
         <el-form-item>
           <el-link type="primary" @click="goRegister">还没有账号？去注册</el-link>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
@@ -43,8 +43,17 @@ const form = reactive({
   rememberMe: false
 })
 
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+
+const isFormValid = computed(() => {
+  return emailRegex.test(form.email) && form.password.trim().length > 0
+})
+
 const rules = {
-  email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { pattern: emailRegex, message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 

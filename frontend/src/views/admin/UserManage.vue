@@ -198,7 +198,9 @@ const fetchDepartments = async () => {
   }
 }
 
-const openCreateModal = () => {
+const openCreateModal = async () => {
+  // 打开弹窗前刷新部门列表
+  await fetchDepartments()
   createForm.value = {
     email: '',
     username: '',
@@ -239,7 +241,9 @@ const createUser = async () => {
   }
 }
 
-const openEditModal = (user) => {
+const openEditModal = async (user) => {
+  // 打开编辑弹窗前刷新部门列表
+  await fetchDepartments()
   editForm.value = {
     id: user.id,
     email: user.email,

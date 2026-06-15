@@ -31,7 +31,13 @@
         </el-form-item>
         <el-form-item label="父部门">
           <el-select v-model="form.parent_id" placeholder="请选择父部门" clearable>
-            <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+            <el-option 
+              v-for="dept in departments" 
+              :key="dept.id" 
+              :label="dept.name" 
+              :value="dept.id"
+              :disabled="editingDepartment && dept.id === editingDepartment.id"
+            />
           </el-select>
         </el-form-item>
       </el-form>

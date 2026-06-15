@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
@@ -45,6 +45,14 @@ const form = reactive({
   username: '',
   password: '',
   confirmPassword: ''
+})
+
+onMounted(() => {
+  // 自动填充记住的邮箱到邮箱字段
+  const rememberedEmail = localStorage.getItem('remembered_email')
+  if (rememberedEmail) {
+    form.email = rememberedEmail
+  }
 })
 
 const validateConfirmPassword = (rule, value, callback) => {
