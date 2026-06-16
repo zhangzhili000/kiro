@@ -28,7 +28,6 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile" :disabled="isAIChatLoading">个人中心</el-dropdown-item>
-              <el-dropdown-item command="settings" :disabled="isAIChatLoading">设置</el-dropdown-item>
               <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -182,11 +181,6 @@ const handleCommand = async (command) => {
     case 'profile':
       if (!isAIChatLoading.value) {
         router.push('/profile')
-      }
-      break
-    case 'settings':
-      if (!isAIChatLoading.value) {
-        router.push('/settings')
       }
       break
     case 'logout':

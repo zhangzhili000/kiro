@@ -86,6 +86,30 @@
 
       <el-divider />
 
+      <!-- 权限设置面板 -->
+      <div class="permissions-section">
+        <h3>
+          <el-icon><Lock /></el-icon>
+          文档权限
+        </h3>
+        <div class="permissions-content">
+          <el-button type="primary" @click="openPermissionsDialog">
+            <el-icon><Setting /></el-icon>
+            设置权限
+          </el-button>
+          <div class="permissions-summary" v-if="permissions.length > 0">
+            <el-tag v-for="perm in permissions" :key="perm.id" size="small" class="permission-tag">
+              {{ getPermissionLabel(perm) }}
+            </el-tag>
+          </div>
+          <div class="no-permissions" v-else>
+            <span>暂无额外权限设置</span>
+          </div>
+        </div>
+      </div>
+
+      <el-divider />
+
       <div class="comments-section">
         <h3>
           <el-icon><ChatDotRound /></el-icon>
@@ -147,6 +171,90 @@
       </div>
     </el-dialog>
 
+    <!-- 权限设置弹窗 -->
+    <el-dialog
+      title="文档权限设置"
+      v-model="permissionsDialogVisible"
+      width="600px"
+      :close-on-click-modal="false"
+      class="permissions-dialog"
+    >
+      <div class="permissions-form">
+        <el-tabs v-model="activePermissionTab">
+          <el-tab-pane label="部门权限" name="department">
+            <div class="permission-row">
+              <el-select v-model="selectedDepartment" placeholder="选择部门" style="width: 200px">
+                <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+              </el-select>
+              <el-checkbox-group v-model="departmentActions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+              <el-button type="primary" size="small" @click="addDepartmentPermission">添加</el-button>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="团队权限" name="team">
+            <div class="permission-row">
+              <el-select v-model="selectedTeam" placeholder="选择团队" style="width: 200px">
+                <el-option v-for="team in teams" :key="team.id" :label="team.name" :value="team.id" />
+              </el-select>
+              <el-checkbox-group v-model="teamActions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+              <el-button type="primary" size="small" @click="addTeamPermission">添加</el-button>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="个人权限" name="user">
+            <div class="permission-row">
+              <el-select v-model="selectedUser" placeholder="选择用户" style="width: 200px">
+                <el-option v-for="user in users" :key="user.id" :label="user.username" :value="user.id" />
+              </el-select>
+              <el-checkbox-group v-model="userActions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+              <el-button type="primary" size="small" @click="addUserPermission">添加</el-button>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+        
+        <el-divider />
+        
+        <div class="current-permissions">
+          <h4>当前权限列表</h4>
+          <el-table :data="permissions" style="width: 100%" v-if="permissions.length > 0">
+            <el-table-column prop="permission_type" label="类型" width="100">
+              <template #default="{ row }">
+                {{ getPermissionTypeLabel(row.permission_type) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="target_name" label="目标" width="150" />
+            <el-table-column prop="action" label="操作" width="100">
+              <template #default="{ row }">
+                {{ getActionLabel(row.action) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="80">
+              <template #default="{ row }">
+                <el-button type="danger" size="small" @click="removePermission(row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <div v-else class="no-permissions-table">
+            <span>暂无权限设置</span>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="permissionsDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="savePermissions" :loading="savingPermissions">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 索引内容弹窗 -->
     <el-dialog
       title="索引内容详情"
@@ -197,7 +305,9 @@ import {
   Refresh,
   CircleCheck,
   CircleClose,
-  DataLine
+  DataLine,
+  Lock,
+  Setting
 } from '@element-plus/icons-vue'
 import AttachmentManager from '@/components/AttachmentManager.vue'
 
@@ -223,6 +333,22 @@ const shareDialogVisible = ref(false)
 const shareUrl = ref('')
 const copying = ref(false)
 const copySuccess = ref(false)
+
+// 权限设置相关
+const permissionsDialogVisible = ref(false)
+const permissions = ref([])
+const departments = ref([])
+const teams = ref([])
+const users = ref([])
+const activePermissionTab = ref('department')
+const selectedDepartment = ref(null)
+const selectedTeam = ref(null)
+const selectedUser = ref(null)
+const departmentActions = ref(['view'])
+const teamActions = ref(['view'])
+const userActions = ref(['view'])
+const savingPermissions = ref(false)
+const pendingPermissions = ref([])
 
 const fetchDocument = async () => {
   try {
@@ -281,6 +407,205 @@ const fetchComments = async () => {
   } catch (error) {
     console.error('Failed to fetch comments:', error)
   }
+}
+
+// 权限相关方法
+const openPermissionsDialog = async () => {
+  permissionsDialogVisible.value = true
+  await Promise.all([
+    fetchPermissions(),
+    fetchDepartments(),
+    fetchTeams(),
+    fetchUsers()
+  ])
+}
+
+const fetchPermissions = async () => {
+  try {
+    const response = await fetch(`/api/v1/documents/${route.params.id}/permissions`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (response.ok) {
+      permissions.value = await response.json()
+      pendingPermissions.value = JSON.parse(JSON.stringify(permissions.value))
+    }
+  } catch (error) {
+    console.error('获取权限失败:', error)
+  }
+}
+
+const fetchDepartments = async () => {
+  try {
+    const response = await fetch('/api/v1/departments', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (response.ok) {
+      departments.value = await response.json()
+    }
+  } catch (error) {
+    console.error('获取部门失败:', error)
+  }
+}
+
+const fetchTeams = async () => {
+  try {
+    const response = await fetch('/api/v1/teams', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (response.ok) {
+      teams.value = await response.json()
+    }
+  } catch (error) {
+    console.error('获取团队失败:', error)
+  }
+}
+
+const fetchUsers = async () => {
+  try {
+    const response = await fetch('/api/v1/users', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (response.ok) {
+      users.value = await response.json()
+    }
+  } catch (error) {
+    console.error('获取用户失败:', error)
+  }
+}
+
+const addDepartmentPermission = () => {
+  if (!selectedDepartment.value) {
+    ElMessage.warning('请选择部门')
+    return
+  }
+  if (departmentActions.value.length === 0) {
+    ElMessage.warning('请选择至少一个操作权限')
+    return
+  }
+  
+  const dept = departments.value.find(d => d.id === selectedDepartment.value)
+  departmentActions.value.forEach(action => {
+    pendingPermissions.value.push({
+      permission_type: 'department',
+      target_id: selectedDepartment.value,
+      action: action,
+      target_name: dept?.name || '',
+      is_new: true
+    })
+  })
+  
+  selectedDepartment.value = null
+  departmentActions.value = ['view']
+}
+
+const addTeamPermission = () => {
+  if (!selectedTeam.value) {
+    ElMessage.warning('请选择团队')
+    return
+  }
+  if (teamActions.value.length === 0) {
+    ElMessage.warning('请选择至少一个操作权限')
+    return
+  }
+  
+  const team = teams.value.find(t => t.id === selectedTeam.value)
+  teamActions.value.forEach(action => {
+    pendingPermissions.value.push({
+      permission_type: 'team',
+      target_id: selectedTeam.value,
+      action: action,
+      target_name: team?.name || '',
+      is_new: true
+    })
+  })
+  
+  selectedTeam.value = null
+  teamActions.value = ['view']
+}
+
+const addUserPermission = () => {
+  if (!selectedUser.value) {
+    ElMessage.warning('请选择用户')
+    return
+  }
+  if (userActions.value.length === 0) {
+    ElMessage.warning('请选择至少一个操作权限')
+    return
+  }
+  
+  const user = users.value.find(u => u.id === selectedUser.value)
+  userActions.value.forEach(action => {
+    pendingPermissions.value.push({
+      permission_type: 'user',
+      target_id: selectedUser.value,
+      action: action,
+      target_name: user?.username || '',
+      is_new: true
+    })
+  })
+  
+  selectedUser.value = null
+  userActions.value = ['view']
+}
+
+const removePermission = (permissionId) => {
+  const index = pendingPermissions.value.findIndex(p => p.id === permissionId || p.temp_id)
+  if (index !== -1) {
+    pendingPermissions.value.splice(index, 1)
+  }
+}
+
+const savePermissions = async () => {
+  savingPermissions.value = true
+  try {
+    // 获取所有新权限
+    const newPermissions = pendingPermissions.value
+      .filter(p => p.is_new)
+      .map(p => ({
+        permission_type: p.permission_type,
+        target_id: p.target_id,
+        action: p.action
+      }))
+    
+    // 批量更新权限
+    const response = await fetch(`/api/v1/documents/${route.params.id}/permissions`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ permissions: newPermissions })
+    })
+    
+    if (response.ok) {
+      ElMessage.success('权限保存成功')
+      await fetchPermissions()
+      permissionsDialogVisible.value = false
+    } else {
+      ElMessage.error('权限保存失败')
+    }
+  } catch (error) {
+    ElMessage.error('权限保存失败')
+    console.error(error)
+  } finally {
+    savingPermissions.value = false
+  }
+}
+
+const getPermissionLabel = (perm) => {
+  const typeLabel = getPermissionTypeLabel(perm.permission_type)
+  const actionLabel = getActionLabel(perm.action)
+  return `${perm.target_name || perm.target_id} (${typeLabel}-${actionLabel})`
+}
+
+const getPermissionTypeLabel = (type) => {
+  const labels = { department: '部门', team: '团队', user: '个人' }
+  return labels[type] || type
+}
+
+const getActionLabel = (action) => {
+  const labels = { view: '查看', edit: '编辑', delete: '删除' }
+  return labels[action] || action
 }
 
 const submitComment = async () => {
@@ -552,6 +877,70 @@ onUnmounted(() => {
 .document-content :deep(img) {
   max-width: 100%;
   border-radius: 8px;
+}
+
+/* 权限设置面板 */
+.permissions-section h3 {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.permissions-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.permissions-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.permission-tag {
+  margin-right: 4px;
+}
+
+.no-permissions {
+  color: #909399;
+  font-size: 14px;
+}
+
+.permission-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.permission-row .el-select {
+  flex: 0 0 200px;
+}
+
+.permission-row .el-checkbox-group {
+  display: flex;
+  gap: 16px;
+}
+
+.current-permissions {
+  margin-top: 16px;
+}
+
+.current-permissions h4 {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.no-permissions-table {
+  text-align: center;
+  padding: 20px;
+  color: #909399;
 }
 
 .comments-section h3 {

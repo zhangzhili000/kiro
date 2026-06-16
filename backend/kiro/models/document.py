@@ -20,13 +20,14 @@ class Document(Base):
     status = Column(String(20), default="draft")  # draft, pending_review, published, rejected
     is_deleted = Column(Boolean, default=False)
     deleted_at = Column(DateTime, nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # 记录删除者
     view_count = Column(Integer, default=0)
     like_count = Column(Integer, default=0)
     comment_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=get_beijing_time)
     updated_at = Column(DateTime, default=get_beijing_time, onupdate=get_beijing_time)
 
-    author = relationship("User", back_populates="documents")
+    author = relationship("User", back_populates="documents", foreign_keys=[author_id])
     category = relationship("Category", back_populates="documents")
     department = relationship("Department")
     tags = relationship("DocumentTag", back_populates="document")
@@ -37,3 +38,4 @@ class Document(Base):
     shares = relationship("DocumentShare", back_populates="document")
     graph_node = relationship("KnowledgeGraphNode", back_populates="document", uselist=False)
     permissions = relationship("DocumentPermission", back_populates="document", cascade="all, delete-orphan")
+    deleted_by_user = relationship("User", foreign_keys=[deleted_by])

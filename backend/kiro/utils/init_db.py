@@ -5,7 +5,7 @@ from kiro.models import (
     Category, Tag, DocumentTag, Comment, UserFavorite, DocumentLike,
     Subscription, Notification, AuditLog, SearchHistory, Role,
     AIConfig, PromptTemplate, DocumentVector, AIConversation,
-    DocumentTemplate, ModelConfig
+    DocumentTemplate, ModelConfig, DocumentPermission
 )
 
 
@@ -24,6 +24,7 @@ def init_db():
         DocumentTag.__table__,
         DocumentVersion.__table__,
         DocumentShare.__table__,
+        DocumentPermission.__table__,
         Comment.__table__,
         UserFavorite.__table__,
         DocumentLike.__table__,

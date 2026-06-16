@@ -17,22 +17,6 @@
       </div>
     </div>
 
-    <div class="filter-bar">
-      <div class="filter-left">
-        <el-select v-model="filter.permission" placeholder="权限筛选" clearable @change="fetchDocuments" class="filter-select">
-          <el-option label="公开" value="public" />
-          <el-option label="私有" value="private" />
-          <el-option label="部门可见" value="department" />
-        </el-select>
-      </div>
-      <div class="filter-right">
-        <el-button @click="fetchDocuments" class="btn-refresh">
-          <el-icon><Refresh /></el-icon>
-          刷新
-        </el-button>
-      </div>
-    </div>
-
     <div class="document-grid" v-loading="loading">
       <div class="document-card" v-for="doc in documents" :key="doc.id" @click="$router.push(`/documents/${doc.id}`)">
         <div class="card-header">
@@ -117,7 +101,6 @@ import { ref, onMounted } from 'vue'
 import { useDocumentStore } from '@/stores/document'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
-  Refresh, 
   Calendar, 
   Document, 
   DocumentAdd, 
@@ -136,17 +119,11 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
-const filter = ref({
-  permission: ''
-})
 
 const fetchDocuments = async () => {
   loading.value = true
   try {
     const params = { page: page.value, page_size: pageSize.value }
-    if (filter.value.permission) {
-      params.permission = filter.value.permission
-    }
     const res = await documentStore.fetchDocuments(params)
     documents.value = res
     total.value = res.length
@@ -238,27 +215,6 @@ onMounted(fetchDocuments)
   padding: 10px 20px;
   font-weight: 500;
   border-radius: 8px;
-}
-
-.filter-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
-  padding: 16px 24px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.filter-select {
-  width: 180px;
-}
-
-.btn-refresh {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .document-grid {

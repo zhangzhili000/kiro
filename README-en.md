@@ -1,5 +1,7 @@
 # Enterprise Knowledge Base Management System
 
+[中文](./README.md) | English
+
 An AI-powered enterprise-level knowledge base management system providing document management, knowledge graph, intelligent Q&A, and other features.
 
 ## 📋 Project Overview

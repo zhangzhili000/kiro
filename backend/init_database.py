@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS documents (
     status VARCHAR(20) DEFAULT 'draft',
     is_deleted BOOLEAN DEFAULT FALSE,
     deleted_at TIMESTAMP,
+    deleted_by INTEGER REFERENCES users(id),
     view_count INTEGER DEFAULT 0,
     like_count INTEGER DEFAULT 0,
     comment_count INTEGER DEFAULT 0,
@@ -297,8 +298,9 @@ CREATE TABLE IF NOT EXISTS roles (
 CREATE TABLE IF NOT EXISTS document_permissions (
     id SERIAL PRIMARY KEY,
     document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
-    permission_type INTEGER NOT NULL,
+    permission_type VARCHAR(20) NOT NULL,
     target_id INTEGER NOT NULL,
+    action VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -14,6 +14,7 @@ from kiro.core.config import settings
 from kiro.services.ai_service import faiss_service
 from kiro.services.model_service import DynamicAIClient
 from kiro.services.document_parser_service import document_parser
+from kiro.services.document_permission_service import get_documents_for_ai_query
 from kiro.models.document import Document
 from kiro.models.ai_models import DocumentVector, AIConversation
 from kiro.schemas.ai_schemas import (
@@ -564,6 +565,16 @@ async def chat(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/accessible-docs-count")
+async def get_accessible_docs_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取当前用户有权限访问的文档数量"""
+    accessible_docs = get_documents_for_ai_query(db, current_user.id)
+    return {"count": len(accessible_docs)}
+
+
 @router.get("/chat/history", response_model=ConversationListResponse)
 async def get_chat_history(
     limit: int = 100,
@@ -1006,13 +1017,19 @@ async def chat_stream(
                 step2_tokens = step2_usage.get("total_tokens", 0)
                 results = faiss_service.search(query_vector, top_k=15)
                 
-                # 过滤相似度≥0.6的文档（相似度 = 1 - distance）
+                # 获取用户有权限访问的文档ID列表
+                accessible_docs = get_documents_for_ai_query(db, current_user.id)
+                accessible_doc_ids = set(str(doc.id) for doc in accessible_docs)
+                
+                # 过滤相似度≥0.6的文档（相似度 = 1 - distance）且有权限访问
                 relevant_results = []
                 if results:
                     for r in results:
                         distance = r.get("distance", 1.0)
                         similarity = 1 - distance
-                        if similarity >= 0.6:
+                        # 检查权限：用户必须有查看权限才能使用该文档
+                        doc_id = str(r.get("document_id", ""))
+                        if similarity >= 0.6 and doc_id in accessible_doc_ids:
                             relevant_results.append(r)
                 
                 if relevant_results:

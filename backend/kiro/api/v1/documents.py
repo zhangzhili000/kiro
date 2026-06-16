@@ -10,6 +10,12 @@ from ...schemas.document import (
 )
 from ...models import Document, DocumentVersion, UserFavorite, DocumentLike, DocumentShare, DocumentTag, User
 from ...api.v1.users import get_current_user
+from ...services.document_permission_service import (
+    check_document_view_permission,
+    check_document_edit_permission,
+    check_document_delete_permission,
+    get_documents_with_view_permission
+)
 
 router = APIRouter(prefix="/documents", tags=["文档"])
 
@@ -21,9 +27,35 @@ def list_documents(
     category_id: Optional[int] = None,
     tag_id: Optional[int] = None,
     permission: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Document).filter(Document.is_deleted == False)
+    # 获取用户有权限查看的文档
+    accessible_docs = get_documents_with_view_permission(db, current_user.id)
+    accessible_doc_ids = {doc.id for doc in accessible_docs}
+    
+    # 获取用户创建的文档
+    author_docs = db.query(Document).filter(
+        Document.author_id == current_user.id,
+        Document.is_deleted == False
+    ).all()
+    author_doc_ids = {doc.id for doc in author_docs}
+    
+    # 获取公开文档
+    public_docs = db.query(Document).filter(
+        Document.permission == "public",
+        Document.is_deleted == False
+    ).all()
+    public_doc_ids = {doc.id for doc in public_docs}
+    
+    # 合并所有可访问的文档ID
+    all_accessible_ids = accessible_doc_ids | author_doc_ids | public_doc_ids
+    
+    query = db.query(Document).filter(
+        Document.id.in_(all_accessible_ids),
+        Document.is_deleted == False
+    )
+    
     if category_id:
         query = query.filter(Document.category_id == category_id)
     if permission:
@@ -65,8 +97,15 @@ def list_documents(
 
 
 @router.get("/trash", response_model=List[DocumentListResponse])
-def list_trash(db: Session = Depends(get_db)):
-    documents = db.query(Document).filter(Document.is_deleted == True).all()
+def list_trash(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # 显示用户自己删除的文档，以及用户创建的并且被删除的文档
+    documents = db.query(Document).filter(
+        Document.is_deleted == True,
+        or_(
+            Document.author_id == current_user.id,  # 用户创建的文档
+            Document.deleted_by == current_user.id  # 用户删除的文档
+        )
+    ).all()
 
     result = []
     for doc in documents:
@@ -100,10 +139,14 @@ def list_trash(db: Session = Depends(get_db)):
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
-def get_document(document_id: int, db: Session = Depends(get_db)):
+def get_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
+
+    # 检查权限
+    if not check_document_view_permission(db, document_id, current_user.id):
+        raise HTTPException(status_code=403, detail="无权限查看该文档")
 
     document.view_count += 1
     db.commit()
@@ -209,10 +252,14 @@ def create_document(document: DocumentCreate, db: Session = Depends(get_db), cur
 
 
 @router.put("/{document_id}", response_model=DocumentResponse)
-def update_document(document_id: int, document_update: DocumentUpdate, db: Session = Depends(get_db)):
+def update_document(document_id: int, document_update: DocumentUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
+
+    # 检查编辑权限
+    if not check_document_edit_permission(db, document_id, current_user.id):
+        raise HTTPException(status_code=403, detail="无权限编辑该文档")
 
     update_data = document_update.model_dump(exclude_unset=True, exclude={"tag_ids"})
     
@@ -281,14 +328,19 @@ def update_document(document_id: int, document_update: DocumentUpdate, db: Sessi
 
 
 @router.delete("/{document_id}")
-def delete_document(document_id: int, db: Session = Depends(get_db)):
+def delete_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
 
+    # 检查删除权限
+    if not check_document_delete_permission(db, document_id, current_user.id):
+        raise HTTPException(status_code=403, detail="无权限删除该文档")
+
     document.is_deleted = True
     from kiro.core.timezone_utils import get_beijing_time
     document.deleted_at = get_beijing_time()
+    document.deleted_by = current_user.id  # 记录删除者
     db.commit()
     return {"message": "文档已移入回收站"}
 

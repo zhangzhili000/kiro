@@ -25,7 +25,7 @@ class User(Base):
     updated_at = Column(DateTime, default=get_beijing_time, onupdate=get_beijing_time)
 
     department = relationship("Department", back_populates="users")
-    documents = relationship("Document", back_populates="author")
+    documents = relationship("Document", back_populates="author", foreign_keys="Document.author_id")
     comments = relationship("Comment", back_populates="user")
     favorites = relationship("UserFavorite", back_populates="user")
     likes = relationship("DocumentLike", back_populates="user")

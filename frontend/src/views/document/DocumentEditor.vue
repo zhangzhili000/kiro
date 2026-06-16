@@ -89,21 +89,60 @@
             <el-radio value="public">公开</el-radio>
             <el-radio value="private">私有</el-radio>
             <el-radio value="department">部门可见</el-radio>
+            <el-radio value="team">团队可见</el-radio>
+            <el-radio value="user">指定用户可见</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="允许编辑的部门">
-          <el-select v-model="form.department_ids" multiple placeholder="请选择允许编辑的部门">
-            <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+        <!-- 部门权限设置 -->
+        <el-form-item label="部门权限">
+          <div class="permission-group">
+            <div v-for="(deptPerm, index) in form.departmentPermissions" :key="deptPerm.target_id" class="permission-item">
+              <span class="permission-target">{{ getDepartmentName(deptPerm.target_id) }}</span>
+              <el-checkbox-group v-model="form.departmentPermissions[index].actions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+          <el-select v-model="selectedDepartment" placeholder="选择部门添加权限" @change="addDepartmentPermission" class="permission-select">
+            <el-option v-for="dept in availableDepartments" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
-          <span class="help-text">选择后，该部门下的所有用户都可以编辑此文档</span>
         </el-form-item>
 
-        <el-form-item label="允许编辑的用户">
-          <el-select v-model="form.user_ids" multiple placeholder="请选择允许编辑的用户">
-            <el-option v-for="user in users" :key="user.id" :label="user.username" :value="user.id" />
+        <!-- 团队权限设置 -->
+        <el-form-item label="团队权限">
+          <div class="permission-group">
+            <div v-for="(teamPerm, index) in form.teamPermissions" :key="teamPerm.target_id" class="permission-item">
+              <span class="permission-target">{{ getTeamName(teamPerm.target_id) }}</span>
+              <el-checkbox-group v-model="form.teamPermissions[index].actions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+          <el-select v-model="selectedTeam" placeholder="选择团队添加权限" @change="addTeamPermission" class="permission-select">
+            <el-option v-for="team in availableTeams" :key="team.id" :label="team.name" :value="team.id" />
           </el-select>
-          <span class="help-text">选择后，这些用户可以编辑此文档</span>
+        </el-form-item>
+
+        <!-- 用户权限设置 -->
+        <el-form-item label="用户权限">
+          <div class="permission-group">
+            <div v-for="(userPerm, index) in form.userPermissions" :key="userPerm.target_id" class="permission-item">
+              <span class="permission-target">{{ getUserName(userPerm.target_id) }}</span>
+              <el-checkbox-group v-model="form.userPermissions[index].actions">
+                <el-checkbox label="view">查看</el-checkbox>
+                <el-checkbox label="edit">编辑</el-checkbox>
+                <el-checkbox label="delete">删除</el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+          <el-select v-model="selectedUser" placeholder="选择用户添加权限" @change="addUserPermission" class="permission-select">
+            <el-option v-for="user in availableUsers" :key="user.id" :label="user.username" :value="user.id" />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="内容">
@@ -186,8 +225,9 @@ const form = reactive({
   category_id: null,
   tag_ids: [],
   permission: 'public',
-  department_ids: [],
-  user_ids: []
+  departmentPermissions: [],
+  teamPermissions: [],
+  userPermissions: []
 })
 
 const keywordInput = ref('')
@@ -195,12 +235,83 @@ const keywordInput = ref('')
 const categories = ref([])
 const tags = ref([])
 const departments = ref([])
+const teams = ref([])
 const users = ref([])
+const selectedDepartment = ref(null)
+const selectedTeam = ref(null)
+const selectedUser = ref(null)
+
+// 已选中的用户（用于权限设置展示）
+const selectedUsers = ref([])
 
 const uploadUrl = computed(() => '/api/v1/ai/documents/upload')
 const uploadHeaders = computed(() => ({
   'Authorization': `Bearer ${localStorage.getItem('access_token')}`
 }))
+
+// 可用于添加权限的部门（尚未添加权限的部门）
+const availableDepartments = computed(() => {
+  const usedIds = form.departmentPermissions.map(p => p.target_id)
+  return departments.value.filter(d => !usedIds.includes(d.id))
+})
+
+// 可用于添加权限的团队（尚未添加权限的团队）
+const availableTeams = computed(() => {
+  const usedIds = form.teamPermissions.map(p => p.target_id)
+  return teams.value.filter(t => !usedIds.includes(t.id))
+})
+
+// 可用于添加权限的用户（尚未添加权限的用户）
+const availableUsers = computed(() => {
+  const usedIds = form.userPermissions.map(p => p.target_id)
+  return users.value.filter(u => !usedIds.includes(u.id))
+})
+
+// 添加部门权限
+const addDepartmentPermission = (deptId) => {
+  if (deptId && !form.departmentPermissions.find(p => p.target_id === deptId)) {
+    form.departmentPermissions.push({ target_id: deptId, actions: ['view'] })
+  }
+  selectedDepartment.value = null
+}
+
+// 添加团队权限
+const addTeamPermission = (teamId) => {
+  if (teamId && !form.teamPermissions.find(p => p.target_id === teamId)) {
+    form.teamPermissions.push({ target_id: teamId, actions: ['view'] })
+  }
+  selectedTeam.value = null
+}
+
+// 添加用户权限
+const addUserPermission = (userId) => {
+  if (userId && !form.userPermissions.find(p => p.target_id === userId)) {
+    const user = users.value.find(u => u.id === userId)
+    form.userPermissions.push({ target_id: userId, actions: ['view'] })
+    if (user) {
+      selectedUsers.value.push(user)
+    }
+  }
+  selectedUser.value = null
+}
+
+// 获取部门名称
+const getDepartmentName = (deptId) => {
+  const dept = departments.value.find(d => d.id === deptId)
+  return dept ? dept.name : ''
+}
+
+// 获取团队名称
+const getTeamName = (teamId) => {
+  const team = teams.value.find(t => t.id === teamId)
+  return team ? team.name : ''
+}
+
+// 获取用户名称
+const getUserName = (userId) => {
+  const user = users.value.find(u => u.id === userId)
+  return user ? user.username : ''
+}
 
 const fetchData = async () => {
   await categoryStore.fetchCategories()
@@ -213,6 +324,13 @@ const fetchData = async () => {
   })
   if (deptResponse.ok) {
     departments.value = await deptResponse.json()
+  }
+
+  const teamResponse = await fetch('/api/v1/teams', {
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+  })
+  if (teamResponse.ok) {
+    teams.value = await teamResponse.json()
   }
 
   const userResponse = await fetch('/api/v1/admin/users', {
@@ -236,8 +354,33 @@ const fetchData = async () => {
     })
     if (permResponse.ok) {
       const permissions = await permResponse.json()
-      form.department_ids = permissions.filter(p => p.permission_type === 1).map(p => p.target_id)
-      form.user_ids = permissions.filter(p => p.permission_type === 2).map(p => p.target_id)
+      
+      // 解析部门权限
+      const deptPerms = permissions.filter(p => p.permission_type === 'department')
+      form.departmentPermissions = deptPerms.map(p => ({
+        target_id: p.target_id,
+        actions: [p.action]
+      }))
+
+      // 解析团队权限
+      const teamPerms = permissions.filter(p => p.permission_type === 'team')
+      form.teamPermissions = teamPerms.map(p => ({
+        target_id: p.target_id,
+        actions: [p.action]
+      }))
+
+      // 解析用户权限
+      const userPerms = permissions.filter(p => p.permission_type === 'user')
+      form.userPermissions = userPerms.map(p => {
+        const user = users.value.find(u => u.id === p.target_id)
+        if (user) {
+          selectedUsers.value.push(user)
+        }
+        return {
+          target_id: p.target_id,
+          actions: [p.action]
+        }
+      })
     }
   }
 }
@@ -474,15 +617,70 @@ const handleSave = async () => {
 
   try {
     const saveForm = {
-      ...form,
-      keywords: JSON.stringify(form.keywords)
+      title: form.title,
+      content: form.content,
+      html_content: form.html_content,
+      summary: form.summary,
+      keywords: JSON.stringify(form.keywords),
+      category_id: form.category_id,
+      tag_ids: form.tag_ids,
+      permission: form.permission
     }
     
+    let documentId
     if (isEdit.value) {
       await documentStore.updateDocument(route.params.id, saveForm)
+      documentId = route.params.id
     } else {
-      await documentStore.createDocument(saveForm)
+      const result = await documentStore.createDocument(saveForm)
+      documentId = result.id
     }
+
+    // 构建权限数据
+    const permissions = []
+    
+    // 添加部门权限
+    for (const deptPerm of form.departmentPermissions) {
+      for (const action of deptPerm.actions) {
+        permissions.push({
+          permission_type: 'department',
+          target_id: deptPerm.target_id,
+          action: action
+        })
+      }
+    }
+    
+    // 添加团队权限
+    for (const teamPerm of form.teamPermissions) {
+      for (const action of teamPerm.actions) {
+        permissions.push({
+          permission_type: 'team',
+          target_id: teamPerm.target_id,
+          action: action
+        })
+      }
+    }
+    
+    // 添加用户权限
+    for (const userPerm of form.userPermissions) {
+      for (const action of userPerm.actions) {
+        permissions.push({
+          permission_type: 'user',
+          target_id: userPerm.target_id,
+          action: action
+        })
+      }
+    }
+    
+    // 保存权限
+    await fetch(`/api/v1/documents/${documentId}/permissions`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ permissions })
+    })
 
     ElMessage.success('文档保存成功，索引正在后台构建中...')
     router.push('/documents')
@@ -526,6 +724,35 @@ onMounted(fetchData)
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+}
+
+.permission-group {
+  margin-bottom: 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.permission-item:last-child {
+  border-bottom: none;
+}
+
+.permission-target {
+  min-width: 100px;
+  font-weight: 500;
+}
+
+.permission-select {
+  width: 200px;
+  margin-top: 8px;
 }
 
 .processing-steps {

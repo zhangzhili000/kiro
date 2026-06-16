@@ -86,6 +86,10 @@
             <div class="tip-item">❓ 回答您的问题</div>
             <div class="tip-item">💡 提供专业建议</div>
           </div>
+          <div class="permission-notice" v-if="accessibleDocCount !== null">
+            <el-icon><InfoFilled /></el-icon>
+            <span>您当前有权限访问 <strong>{{ accessibleDocCount }}</strong> 篇文档</span>
+          </div>
         </div>
         
         <!-- 消息列表 -->
@@ -317,6 +321,7 @@ import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAIService } from '@/stores/ai'
 import { ElMessageBox, ElMessage, ElInput } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 
 // 为 keep-alive 组件设置名称
 defineOptions({
@@ -333,6 +338,7 @@ const aiService = useAIService()
 const messageList = ref(null)
 const inputRef = ref(null)
 const isLoading = ref(false)
+const accessibleDocCount = ref(null)
 const loadingConversationId = ref(null) // 跟踪当前正在加载的对话ID
 const activeMenuUuid = ref(null) // 当前激活的菜单的conversation_uuid
 const isStopping = ref(false) // 是否正在终止对话
@@ -854,6 +860,7 @@ const handleDeleteConversation = async (conversation) => {
 
 onMounted(() => {
   loadConversationHistory()
+  fetchAccessibleDocCount()
   
   // 刷新页面后，确保消息列表不为空时也能正确显示
   // 检查是否有未完成的消息状态（虽然刷新后会丢失，但做个保障）
@@ -862,6 +869,21 @@ onMounted(() => {
     selectedConversationId.value = null
   }
 })
+
+// 获取用户可访问的文档数量
+const fetchAccessibleDocCount = async () => {
+  try {
+    const response = await fetch('/api/v1/ai/accessible-docs-count', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (response.ok) {
+      const data = await response.json()
+      accessibleDocCount.value = data.count
+    }
+  } catch (error) {
+    console.error('获取可访问文档数量失败:', error)
+  }
+}
 
 onUnmounted(() => {
   document.removeEventListener('click', closeMenu)
@@ -1197,6 +1219,24 @@ onUnmounted(() => {
   border: 1px solid #e2e8f0;
   color: #475569;
   font-size: 12px;
+}
+
+.permission-notice {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f0f9eb;
+  border: 1px solid #c2e7b0;
+  border-radius: 4px;
+  color: #67c23a;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.permission-notice strong {
+  color: #67c23a;
+  font-weight: 600;
 }
 
 /* 消息样式 */
