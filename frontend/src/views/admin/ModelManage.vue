@@ -4,7 +4,6 @@
       <h3 class="manage-title"> 模型管理</h3>
       <p class="manage-desc">管理系统使用的各类AI模型配置，至少需要配置1个对话大模型和1个向量模型</p>
     </div>
-
     <div class="model-content">
       <!-- 智能对话模型 -->
       <div class="model-section">
@@ -251,6 +250,7 @@
             v-model="modelForm.type" 
             placeholder="请选择模型类型"
             :disabled="!!editingModel"
+            @change="onTypeChange"
           >
             <el-option label="智能对话模型" value="chat" />
             <el-option label="向量模型" value="embedding" />
@@ -259,7 +259,17 @@
             <el-option label="图像分析模型" value="image" />
           </el-select>
         </el-form-item>
-        <el-form-item label="API类型" required>
+        
+        <!-- 文档分析模型的API类型 -->
+        <el-form-item v-if="modelForm.type === 'document'" label="API类型" required>
+          <el-select v-model="modelForm.api_type" placeholder="请选择API类型" @change="updateApiFields">
+            <el-option label="不使用（使用默认方案）" value="" />
+            <el-option label="MinerU" value="mineru" />
+          </el-select>
+        </el-form-item>
+        
+        <!-- 其他模型的API类型 -->
+        <el-form-item v-if="modelForm.type !== 'document'" label="API类型" required>
           <el-select v-model="modelForm.api_type" placeholder="请选择API类型" @change="updateApiFields">
             <el-option label="阿里百炼" value="alibaba_duilian" />
             <el-option label="DeepSeek" value="deepseek" />
@@ -269,10 +279,33 @@
             <el-option label="自定义" value="custom" />
           </el-select>
         </el-form-item>
-        <el-form-item label="模型标识" required>
+        
+        <!-- MinerU解析模式选择 -->
+        <el-form-item v-if="modelForm.api_type === 'mineru'" label="解析模式" required>
+          <el-select v-model="modelForm.model_id" placeholder="请选择解析模式">
+            <el-option label="轻量解析API（免Token，IP限频）" value="agent" />
+            <el-option label="精准解析API（需Token，高精度）" value="precision" />
+          </el-select>
+        </el-form-item>
+        
+        <!-- 其他模型的模型标识 -->
+        <el-form-item v-if="modelForm.type !== 'document' && modelForm.api_type !== 'mineru'" label="模型标识" required>
           <el-input v-model="modelForm.model_id" placeholder="请输入模型标识（如 deepseek-chat, bge-m3）" />
         </el-form-item>
-        <el-form-item label="API密钥" required>
+        
+        <!-- MinerU的Token输入 -->
+        <el-form-item v-if="modelForm.type === 'document' && modelForm.api_type === 'mineru' && modelForm.model_id === 'precision'" label="API密钥">
+          <el-input 
+            v-model="modelForm.api_key" 
+            type="password" 
+            autocomplete="off"
+            placeholder="请输入MinerU Token（精准解析API需要）"
+            :show-password="showApiKey"
+          />
+        </el-form-item>
+        
+        <!-- 其他模型的API密钥 -->
+        <el-form-item v-if="modelForm.type !== 'document' && modelForm.api_type !== 'mineru'" label="API密钥" required>
           <el-input 
             v-model="modelForm.api_key" 
             type="password" 
@@ -281,6 +314,7 @@
             :show-password="showApiKey"
           />
         </el-form-item>
+        
         <el-form-item label="API端点">
           <el-input v-model="modelForm.api_base" placeholder="请输入API端点地址" />
         </el-form-item>
@@ -373,6 +407,7 @@ const providerNames = {
   openai: 'OpenAI',
   zhipu: '智谱AI',
   siliconflow: '硅基流动',
+  mineru: 'MinerU',
   custom: '自定义'
 }
 
@@ -386,11 +421,36 @@ const defaultApiBases = {
   openai: 'https://api.openai.com/v1',
   zhipu: 'https://open.bigmodel.cn/api/paas/v4',
   siliconflow: 'https://api.siliconflow.cn/v1',
+  mineru: 'https://mineru.net/api/v4',
   custom: ''
 }
 
 const updateApiFields = () => {
-  modelForm.api_base = defaultApiBases[modelForm.api_type] || ''
+  // 文档分析模型不需要设置默认API端点
+  if (modelForm.type === 'document' && modelForm.api_type === 'mineru') {
+    modelForm.api_base = 'https://mineru.net/api/v1/agent'
+  } else if (modelForm.type === 'document') {
+    modelForm.api_base = ''
+  } else {
+    modelForm.api_base = defaultApiBases[modelForm.api_type] || ''
+  }
+}
+
+const onTypeChange = () => {
+  // 模型类型变化时，重置相关字段
+  if (modelForm.type === 'document') {
+    // 文档分析模型默认不使用
+    modelForm.api_type = ''
+    modelForm.model_id = ''
+    modelForm.api_key = ''
+    modelForm.api_base = ''
+  } else {
+    // 其他模型类型
+    modelForm.api_type = 'openai'
+    modelForm.model_id = ''
+    modelForm.api_key = ''
+    modelForm.api_base = defaultApiBases['openai']
+  }
 }
 
 const getModelsByType = (type) => {
@@ -415,16 +475,30 @@ const loadModels = async () => {
 
 const addModel = (type) => {
   editingModel.value = null
-  Object.assign(modelForm, {
-    id: null,
-    type: type,
-    api_type: 'openai',
-    model_id: '',
-    api_key: '',
-    api_base: defaultApiBases['openai'],
-    description: '',
-    status: 'active'
-  })
+  if (type === 'document') {
+    // 文档分析模型默认不使用MinerU
+    Object.assign(modelForm, {
+      id: null,
+      type: type,
+      api_type: '',
+      model_id: '',
+      api_key: '',
+      api_base: '',
+      description: '',
+      status: 'active'
+    })
+  } else {
+    Object.assign(modelForm, {
+      id: null,
+      type: type,
+      api_type: 'openai',
+      model_id: '',
+      api_key: '',
+      api_base: defaultApiBases['openai'],
+      description: '',
+      status: 'active'
+    })
+  }
   showModal.value = true
 }
 
@@ -435,9 +509,28 @@ const editModelAction = (model) => {
 }
 
 const saveModel = async () => {
-  if (!modelForm.model_id || !modelForm.api_key) {
-    ElMessage.warning('请填写必填项')
-    return
+  // 文档分析模型验证逻辑
+  if (modelForm.type === 'document') {
+    if (modelForm.api_type === 'mineru') {
+      if (!modelForm.model_id) {
+        ElMessage.warning('请选择解析模式')
+        return
+      }
+      // 精准解析需要Token
+      if (modelForm.model_id === 'precision' && !modelForm.api_key) {
+        ElMessage.warning('精准解析API需要配置Token')
+        return
+      }
+    } else {
+      // 文档分析模型不使用MinerU时，不需要填写其他字段
+      // 允许 api_type 为空（即不使用任何配置）
+    }
+  } else {
+    // 其他模型验证逻辑
+    if (!modelForm.model_id || !modelForm.api_key) {
+      ElMessage.warning('请填写必填项')
+      return
+    }
   }
 
   try {

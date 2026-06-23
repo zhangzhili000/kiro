@@ -68,10 +68,10 @@ def get_ai_client(db: Session = Depends(get_db)):
     client.set_prompt_templates(prompt_templates_cache)
     return client
 
-
 @router.post("/documents/upload")
 async def upload_document(
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """上传文档并自动进行格式转换"""
@@ -88,7 +88,8 @@ async def upload_document(
         with open(temp_file_path, "wb") as buffer:
             buffer.write(await file.read())
         
-        # 解析文件
+        # 设置数据库连接并解析文件
+        document_parser.set_db(db)
         result = document_parser.parse_file(temp_file_path, file_extension[1:])
         
         # 获取HTML内容（优先使用解析结果中已有的html_content）
@@ -118,9 +119,13 @@ async def upload_document(
 
 
 @router.post("/documents/convert", response_model=DocumentConvertResponse)
-async def convert_document(request: DocumentConvertRequest):
+async def convert_document(
+    request: DocumentConvertRequest,
+    db: Session = Depends(get_db)
+):
     """文档格式转换"""
     try:
+        document_parser.set_db(db)
         result = document_parser.parse_file(request.file_path, request.file_type)
         html_content = document_parser.convert_to_html(result["content"], result["type"])
         

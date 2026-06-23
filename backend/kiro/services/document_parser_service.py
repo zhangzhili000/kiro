@@ -1,14 +1,61 @@
 import os
 import re
+import glob
+import time
+import requests
+import tempfile
+import zipfile
+import json
 from typing import List, Dict, Optional
 from fastapi import HTTPException
 
-
 class DocumentParser:
-    """文档解析服务，使用MinerU进行文档解析，支持多种格式"""
+    """文档解析服务，使用MinerU Open API进行文档解析，支持多种格式"""
     
-    def __init__(self):
+    # MinerU Open API 配置
+    MINERU_API_BASE = "https://mineru.net/api/v4"
+    MINERU_AGENT_API_BASE = "https://mineru.net/api/v1/agent"
+    
+    def __init__(self, db=None):
         self.supported_formats = ["pdf", "docx", "doc", "md", "txt", "rtf", "pptx", "xlsx"]
+        self.db = db
+        self._document_model_config = None
+        # 默认API地址（备用）
+        self.default_mineru_api_base = "https://mineru.net/api/v4"
+        self.default_mineru_agent_api_base = "https://mineru.net/api/v1/agent"
+    
+    def set_db(self, db):
+        """设置数据库连接"""
+        self.db = db
+    
+    def _get_document_model_config(self) -> Optional[Dict]:
+        """获取文档解析模型配置"""
+        if self._document_model_config:
+            return self._document_model_config
+        
+        if not self.db:
+            return None
+        
+        try:
+            from kiro.models.ai_models import ModelConfig
+            config = self.db.query(ModelConfig).filter(
+                ModelConfig.type == "document",
+                ModelConfig.status == "active"
+            ).first()
+            
+            if config:
+                self._document_model_config = {
+                    "api_type": config.api_type,
+                    "model_id": config.model_id,
+                    "api_key": config.api_key,
+                    "api_base": config.api_base,
+                    "description": config.description
+                }
+                return self._document_model_config
+        except Exception as e:
+            print(f"DEBUG: 获取文档解析模型配置失败: {str(e)}")
+        
+        return None
     
     def parse_file(self, file_path: str, file_type: Optional[str] = None) -> Dict:
         """解析文件内容"""
@@ -38,79 +85,416 @@ class DocumentParser:
         return ext
     
     def _parse_with_mineru(self, file_path: str, file_type: str) -> Dict:
-        """使用MinerU解析文件"""
-        try:
-            from mineru import DocumentParser as MinerUParser
+        """使用MinerU Open API解析文件"""
+        model_config = self._get_document_model_config()
+        
+        # 检查是否配置了MinerU（api_type为mineru且存在）
+        is_mineru_configured = model_config and model_config.get("api_type") == "mineru"
+        
+        if is_mineru_configured:
+            token = model_config.get("api_key")
+            api_base = model_config.get("api_base")
+            parse_mode = model_config.get("model_id")  # agent 或 precision
             
-            parser = MinerUParser()
-            result = parser.parse(file_path)
-            
-            content = ""
-            tables = []
-            images = []
-            
-            # 提取文本内容（保留原始结构）
-            if hasattr(result, 'content'):
-                content = result.content
-            elif hasattr(result, 'text'):
-                content = result.text
-            elif isinstance(result, dict):
-                content = result.get('content', result.get('text', str(result)))
+            if parse_mode == "precision" or (parse_mode is None and token):
+                # 用户选择精准解析，或者没有选择模式但配置了Token
+                print(f"DEBUG: 使用MinerU精准解析API（有Token）")
+                return self._parse_with_mineru_precision(file_path, file_type, token, api_base)
             else:
-                content = str(result)
+                # 用户选择轻量解析，或者没有选择模式且没有Token
+                print(f"DEBUG: 使用MinerU轻量解析API（无Token）")
+                return self._parse_with_mineru_agent(file_path, file_type, api_base)
+        else:
+            # 没有配置MinerU或配置为空，使用默认的轻量解析API
+            print(f"DEBUG: 使用MinerU轻量解析API（默认方案）")
+            return self._parse_with_mineru_agent(file_path, file_type)
+    
+    def _parse_with_mineru_precision(self, file_path: str, file_type: str, token: str, api_base: str = None) -> Dict:
+        """使用MinerU精准解析API（需要Token）"""
+        try:
+            # 使用配置的API地址或默认地址
+            base_url = api_base if api_base else self.default_mineru_api_base
             
-            # 提取表格（保留结构化数据）
-            if hasattr(result, 'tables') and result.tables:
-                for table in result.tables:
-                    if isinstance(table, dict):
-                        tables.append({
-                            "content": table.get('content', ''),
-                            "data": table.get('data', []),
-                            "page": table.get('page', 0)
-                        })
-                    else:
-                        tables.append({
-                            "content": str(table),
-                            "data": [],
-                            "page": 0
-                        })
-            
-            # 提取图片（保留base64或路径）
-            if hasattr(result, 'images') and result.images:
-                for img in result.images:
-                    if isinstance(img, dict):
-                        images.append({
-                            "path": img.get('path', ''),
-                            "base64": img.get('base64', ''),
-                            "page": img.get('page', 0),
-                            "width": img.get('width', 0),
-                            "height": img.get('height', 0)
-                        })
-                    else:
-                        images.append({
-                            "path": str(img),
-                            "base64": "",
-                            "page": 0,
-                            "width": 0,
-                            "height": 0
-                        })
-            
-            return {
-                "content": content.strip(),
-                "metadata": {
-                    "tables_count": len(tables),
-                    "images_count": len(images),
-                    "parser": "mineru"
-                },
-                "tables": tables,
-                "images": images,
-                "type": file_type
+            # Step 1: 申请上传URL
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"
             }
+            
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # 申请批量上传URL
+            apply_url = f"{base_url}/file-urls/batch"
+            apply_data = {
+                "file_names": [file_name],
+                "enable_formula": True,
+                "enable_table": True,
+                "model_version": "vlm"  # 使用VLM模型，精度更高
+            }
+            
+            response = requests.post(apply_url, headers=headers, json=apply_data, timeout=30)
+            if response.status_code != 200:
+                raise RuntimeError(f"MinerU申请上传URL失败: {response.text}")
+            
+            result = response.json()
+            batch_id = result.get("data", {}).get("batch_id")
+            upload_urls = result.get("data", {}).get("file_urls", [])
+            
+            if not batch_id or not upload_urls:
+                raise RuntimeError(f"MinerU返回数据无效: {result}")
+            
+            upload_url = upload_urls[0]
+            print(f"DEBUG: MinerU申请上传URL成功，batch_id: {batch_id}")
+            
+            # Step 2: 上传文件
+            with open(file_path, "rb") as f:
+                upload_response = requests.put(upload_url, data=f.read(), timeout=60)
+                if upload_response.status_code != 200:
+                    raise RuntimeError(f"MinerU上传文件失败: {upload_response.text}")
+            
+            print(f"DEBUG: MinerU上传文件成功")
+            
+            # Step 3: 轮询结果
+            max_retries = 60  # 最大轮询次数
+            retry_interval = 5  # 轮询间隔（秒）
+            
+            for i in range(max_retries):
+                time.sleep(retry_interval)
+                
+                status_url = f"{base_url}/extract/task?batch_id={batch_id}"
+                status_response = requests.get(status_url, headers=headers, timeout=30)
+                
+                if status_response.status_code != 200:
+                    continue
+                
+                status_result = status_response.json()
+                tasks = status_result.get("data", {}).get("tasks", [])
+                
+                if not tasks:
+                    continue
+                
+                task = tasks[0]
+                task_status = task.get("status")
+                
+                if task_status == "completed":
+                    # 获取下载URL
+                    full_zip_url = task.get("full_zip_url")
+                    if full_zip_url:
+                        print(f"DEBUG: MinerU解析完成，开始下载结果")
+                        return self._download_and_parse_mineru_result(full_zip_url, file_type)
+                    else:
+                        raise RuntimeError("MinerU返回结果缺少下载URL")
+                
+                elif task_status == "failed":
+                    error_msg = task.get("error", "未知错误")
+                    raise RuntimeError(f"MinerU解析失败: {error_msg}")
+                
+                print(f"DEBUG: MinerU解析进行中，状态: {task_status}，轮询次数: {i+1}")
+            
+            raise RuntimeError("MinerU解析超时")
+        
+        except requests.exceptions.Timeout:
+            raise RuntimeError("MinerU API请求超时")
+        except Exception as e:
+            raise RuntimeError(f"MinerU精准解析错误: {str(e)}")
+    
+    def _parse_with_mineru_agent(self, file_path: str, file_type: str, api_base: str = None) -> Dict:
+        """使用MinerU轻量解析API（免登录，IP限频）"""
+        try:
+            # 使用配置的API地址或默认地址
+            base_url = api_base if api_base else self.default_mineru_agent_api_base
+            
+            # Step 1: 获取上传URL和task_id
+            upload_url = f"{base_url}/parse/file"
+            
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # 检查文件大小限制（轻量API限制10MB）
+            if file_size > 10 * 1024 * 1024:
+                raise RuntimeError("文件大小超过10MB，轻量解析API不支持，请配置MinerU Token使用精准解析API")
+            
+            # 使用JSON请求体格式获取上传URL
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "file_name": file_name,
+                "file": ""
+            }
+            
+            response = requests.post(upload_url, headers=headers, json=data, timeout=60)
+            
+            if response.status_code != 200:
+                raise RuntimeError(f"MinerU轻量解析获取上传URL失败: {response.text}")
+            
+            result = response.json()
+            task_id = result.get("data", {}).get("task_id")
+            oss_upload_url = result.get("data", {}).get("file_url")
+            
+            if not task_id or not oss_upload_url:
+                raise RuntimeError(f"MinerU返回数据无效: {result}")
+            
+            print(f"DEBUG: MinerU轻量解析获取上传URL成功，task_id: {task_id}")
+            
+            # Step 2: 使用返回的OSS URL上传文件
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+            
+            upload_response = requests.put(oss_upload_url, data=file_content, timeout=60)
+            
+            if upload_response.status_code != 200:
+                raise RuntimeError(f"MinerU轻量解析上传文件到OSS失败: {upload_response.status_code}")
+            
+            print(f"DEBUG: MinerU轻量解析上传文件到OSS成功")
+            
+            # Step 3: 轮询结果
+            max_retries = 30  # 最大轮询次数
+            retry_interval = 3  # 轮询间隔（秒）
+            
+            for i in range(max_retries):
+                time.sleep(retry_interval)
+                
+                status_url = f"{base_url}/parse/{task_id}"
+                status_response = requests.get(status_url, timeout=30)
+                
+                if status_response.status_code != 200:
+                    continue
+                
+                status_result = status_response.json()
+                task_data = status_result.get("data", {})
+                task_status = task_data.get("state")
+                
+                if task_status == "completed" or task_status == "done":
+                    # 获取Markdown内容
+                    markdown_url = task_data.get("markdown_url")
+                    if markdown_url:
+                        print(f"DEBUG: MinerU轻量解析完成，开始下载Markdown")
+                        
+                        # 下载Markdown内容
+                        md_response = requests.get(markdown_url, timeout=30)
+                        if md_response.status_code == 200:
+                            content = md_response.text
+                            return {
+                                "content": content.strip(),
+                                "metadata": {
+                                    "parser": "mineru_agent",
+                                    "task_id": task_id
+                                },
+                                "tables": [],
+                                "images": [],
+                                "type": file_type
+                            }
+                        else:
+                            raise RuntimeError("MinerU Markdown下载失败")
+                    else:
+                        raise RuntimeError("MinerU返回结果缺少Markdown URL")
+                
+                elif task_status == "failed":
+                    # 获取错误信息，API可能返回err_msg或error
+                    error_msg = task_data.get("err_msg") or task_data.get("error") or "未知错误"
+                    
+                    # 检查是否是页数超限错误
+                    if "page count exceeds API limit" in error_msg or "page_range" in error_msg:
+                        print(f"DEBUG: MinerU轻量解析页数超限，开始分割PDF: {error_msg}")
+                        raise RuntimeError(f"page_limit_exceeded: {error_msg}")
+                    
+                    raise RuntimeError(f"MinerU轻量解析失败: {error_msg}")
+                
+                print(f"DEBUG: MinerU轻量解析进行中，状态: {task_status}，轮询次数: {i+1}")
+            
+            raise RuntimeError("MinerU轻量解析超时")
+        
+        except RuntimeError as e:
+            error_str = str(e)
+            # 检查是否是页数超限错误
+            if "page_limit_exceeded" in error_str and file_type == "pdf":
+                # 尝试分割PDF并重新解析
+                split_files = self._split_pdf(file_path)
+                if len(split_files) > 1:
+                    print(f"DEBUG: PDF已分割为 {len(split_files)} 个文件，开始逐个解析")
+                    results = []
+                    for split_file in split_files:
+                        try:
+                            result = self._parse_with_mineru_agent(split_file, file_type, api_base)
+                            results.append(result)
+                        except Exception as split_e:
+                            print(f"DEBUG: 分割文件 {split_file} 解析失败: {str(split_e)}")
+                            # 如果某个分割文件解析失败，尝试使用降级解析
+                            fallback_result = self._fallback_parse(split_file, file_type)
+                            if fallback_result:
+                                results.append(fallback_result)
+                    
+                    if results:
+                        merged_result = self._merge_parse_results(results)
+                        print(f"DEBUG: PDF分割解析完成，已合并 {len(results)} 个结果")
+                        return merged_result
+            
+            # 非页数超限错误，重新抛出
+            raise e
+        
+        except requests.exceptions.Timeout:
+            raise RuntimeError("MinerU API请求超时")
+        except Exception as e:
+            raise RuntimeError(f"MinerU轻量解析错误: {str(e)}")
+    
+    def _split_pdf(self, file_path: str, max_pages: int = 20) -> List[str]:
+        """将PDF分割成多个小文件"""
+        try:
+            import fitz  # PyMuPDF
+            
+            doc = fitz.open(file_path)
+            total_pages = len(doc)
+            split_files = []
+            
+            if total_pages <= max_pages:
+                return [file_path]
+            
+            print(f"DEBUG: PDF文件共 {total_pages} 页，超过限制 {max_pages} 页，开始分割")
+            
+            for i in range(0, total_pages, max_pages):
+                start_page = i
+                end_page = min(i + max_pages, total_pages)
+                
+                output_path = os.path.join(
+                    tempfile.gettempdir(),
+                    f"split_{os.path.basename(file_path)}_{start_page + 1}_{end_page}.pdf"
+                )
+                
+                new_doc = fitz.open()
+                new_doc.insert_pdf(doc, from_page=start_page, to_page=end_page - 1)
+                new_doc.save(output_path)
+                new_doc.close()
+                
+                split_files.append(output_path)
+                print(f"DEBUG: 已分割PDF页面 {start_page + 1}-{end_page} 到 {output_path}")
+            
+            doc.close()
+            return split_files
         
         except ImportError:
-            raise RuntimeError("MinerU library not installed")
+            print("DEBUG: PyMuPDF未安装，无法分割PDF")
+            return [file_path]
         except Exception as e:
-            raise RuntimeError(f"MinerU parse error: {str(e)}")
+            print(f"DEBUG: PDF分割失败: {str(e)}")
+            return [file_path]
+    
+    def _merge_parse_results(self, results: List[Dict]) -> Dict:
+        """合并多个解析结果"""
+        merged_content = ""
+        merged_tables = []
+        merged_images = []
+        page_offset = 0
+        
+        for i, result in enumerate(results):
+            content = result.get("content", "")
+            if content:
+                if i > 0:
+                    merged_content += "\n\n---\n\n"
+                merged_content += content
+            
+            for table in result.get("tables", []):
+                table_copy = table.copy()
+                if "page" in table_copy:
+                    table_copy["page"] += page_offset
+                merged_tables.append(table_copy)
+            
+            for image in result.get("images", []):
+                image_copy = image.copy()
+                if "page" in image_copy:
+                    image_copy["page"] += page_offset
+                merged_images.append(image_copy)
+            
+            pages = result.get("metadata", {}).get("pages", 0)
+            page_offset += pages
+        
+        return {
+            "content": merged_content.strip(),
+            "metadata": {
+                "parser": "mineru_split",
+                "tables_count": len(merged_tables),
+                "images_count": len(merged_images)
+            },
+            "tables": merged_tables,
+            "images": merged_images,
+            "type": "pdf"
+        }
+    
+    def _download_and_parse_mineru_result(self, zip_url: str, file_type: str) -> Dict:
+        """下载并解析MinerU结果ZIP包"""
+        try:
+            # 下载ZIP文件
+            response = requests.get(zip_url, timeout=60)
+            if response.status_code != 200:
+                raise RuntimeError(f"MinerU结果下载失败: {response.status_code}")
+            
+            # 解压ZIP文件
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                zip_path = os.path.join(tmp_dir, "result.zip")
+                with open(zip_path, "wb") as f:
+                    f.write(response.content)
+                
+                with zipfile.ZipFile(zip_path, "r") as zf:
+                    zf.extractall(tmp_dir)
+                
+                # 查找Markdown文件
+                content = ""
+                md_files = glob.glob(os.path.join(tmp_dir, "**", "*.md"), recursive=True)
+                for md_file in md_files:
+                    if os.path.basename(md_file) == "full.md" or "markdown" in md_file:
+                        with open(md_file, "r", encoding="utf-8") as f:
+                            content = f.read()
+                        break
+                
+                # 查找JSON文件（表格、图片等）
+                tables = []
+                images = []
+                json_files = glob.glob(os.path.join(tmp_dir, "**", "*.json"), recursive=True)
+                
+                for json_file in json_files:
+                    try:
+                        with open(json_file, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                            
+                            if isinstance(data, dict):
+                                # 提取表格
+                                if "tables" in data:
+                                    for table in data["tables"]:
+                                        tables.append({
+                                            "content": table.get('content', ''),
+                                            "data": table.get('data', []),
+                                            "page": table.get('page', 0)
+                                        })
+                                
+                                # 提取图片信息
+                                if "images" in data:
+                                    for img in data["images"]:
+                                        images.append({
+                                            "path": img.get('path', ''),
+                                            "base64": img.get('base64', ''),
+                                            "page": img.get('page', 0),
+                                            "width": img.get('width', 0),
+                                            "height": img.get('height', 0)
+                                        })
+                    except:
+                        continue
+                
+                return {
+                    "content": content.strip(),
+                    "metadata": {
+                        "tables_count": len(tables),
+                        "images_count": len(images),
+                        "parser": "mineru_precision"
+                    },
+                    "tables": tables,
+                    "images": images,
+                    "type": file_type
+                }
+        
+        except Exception as e:
+            raise RuntimeError(f"MinerU结果解析错误: {str(e)}")
     
     def _fallback_parse(self, file_path: str, file_type: str) -> Optional[Dict]:
         """降级解析方法，当MinerU不可用时使用"""

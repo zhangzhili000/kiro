@@ -21,7 +21,6 @@ class DocumentVector(Base):
     def __repr__(self):
         return f"<DocumentVector(id={self.id}, document_id={self.document_id}, chunk_index={self.chunk_index})>"
 
-
 class AIConversation(Base):
     """AI对话记录表"""
     __tablename__ = "ai_conversations"
@@ -86,9 +85,9 @@ class ModelConfig(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     type = Column(String(50), nullable=False)  # chat, embedding, rerank, document, image
-    api_type = Column(String(50), nullable=False)  # alibaba_duilian, deepseek, openai, zhipu, siliconflow, custom
-    model_id = Column(String(255), nullable=False)  # 模型标识
-    api_key = Column(String(500), nullable=False)  # API密钥
+    api_type = Column(String(50), nullable=False)  # alibaba_duilian, deepseek, openai, zhipu, siliconflow, mineru, custom
+    model_id = Column(String(255))  # 模型标识（MinerU轻量解析不需要）
+    api_key = Column(String(500))  # API密钥（MinerU轻量解析不需要）
     api_base = Column(String(500))  # API端点地址
     description = Column(Text)
     status = Column(String(20), default="active")  # active, disabled

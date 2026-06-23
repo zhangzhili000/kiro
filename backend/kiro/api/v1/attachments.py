@@ -16,7 +16,6 @@ router = APIRouter(prefix="/attachments", tags=["附件管理"])
 
 UPLOAD_DIR = "uploads"
 
-
 @router.post("/{document_id}/upload")
 async def upload_attachment(
     document_id: int,
@@ -43,9 +42,8 @@ async def upload_attachment(
         
         attachment = Attachment(
             document_id=document_id,
-            filename=new_filename,
+            stored_filename=new_filename,
             original_filename=file.filename,
-            file_path=file_path,
             file_size=len(content),
             content_type=file.content_type,
             uploaded_by=current_user.id
@@ -72,8 +70,7 @@ def list_attachments(
         raise HTTPException(status_code=404, detail="文档不存在")
     
     attachments = db.query(Attachment).filter(
-        Attachment.document_id == document_id,
-        Attachment.is_deleted == False
+        Attachment.document_id == document_id
     ).all()
     
     return attachments
@@ -90,8 +87,11 @@ def delete_attachment(
     if not attachment:
         raise HTTPException(status_code=404, detail="附件不存在")
     
-    # 软删除
-    attachment.is_deleted = True
+    file_path = os.path.join(UPLOAD_DIR, attachment.stored_filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    db.delete(attachment)
     db.commit()
     
     return {"message": "附件已删除"}
@@ -107,14 +107,15 @@ def download_attachment(
     from fastapi.responses import FileResponse
     
     attachment = db.query(Attachment).filter(Attachment.id == attachment_id).first()
-    if not attachment or attachment.is_deleted:
+    if not attachment:
         raise HTTPException(status_code=404, detail="附件不存在")
     
-    if not os.path.exists(attachment.file_path):
+    file_path = os.path.join(UPLOAD_DIR, attachment.stored_filename)
+    if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件不存在")
     
     return FileResponse(
-        path=attachment.file_path,
+        path=file_path,
         filename=attachment.original_filename,
         media_type=attachment.content_type
     )

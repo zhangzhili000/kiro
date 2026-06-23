@@ -6,7 +6,7 @@ from datetime import datetime
 class AttachmentResponse(BaseModel):
     id: int
     document_id: int
-    filename: str
+    stored_filename: str
     original_filename: str
     file_size: Optional[int]
     content_type: Optional[str]
