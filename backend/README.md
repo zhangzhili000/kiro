@@ -49,7 +49,7 @@ python -m kiro.utils.init_db
 
 ```bash
 cd backend
-uvicorn kiro.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 访问 http://localhost:8000/docs 查看API文档。

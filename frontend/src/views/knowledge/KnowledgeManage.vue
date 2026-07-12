@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DocumentList from '@/views/document/DocumentList.vue'
 import CategoryManage from '@/views/category/CategoryManage.vue'
@@ -38,10 +38,19 @@ watch(() => route.query.tab, (newTab) => {
   if (newTab) {
     activeTab.value = newTab
   }
-}, { immediate: true })
+})
 
 watch(activeTab, (newTab) => {
   router.replace({ query: { ...route.query, tab: newTab } })
+})
+
+onMounted(() => {
+  if (!route.query.tab) {
+    activeTab.value = 'documents'
+    router.replace({ query: { tab: 'documents' } })
+  } else {
+    activeTab.value = route.query.tab
+  }
 })
 </script>
 

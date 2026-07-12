@@ -4,7 +4,7 @@
       <template #header>
         <div class="header-actions">
           <span>回收站</span>
-          <el-button @click="$router.push('/documents')">返回文档列表</el-button>
+          <el-button @click="$router.push('/knowledge')">返回文档列表</el-button>
         </div>
       </template>
 

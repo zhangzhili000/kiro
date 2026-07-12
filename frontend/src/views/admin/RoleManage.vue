@@ -100,8 +100,7 @@ const permissionOptions = [
   { label: '分类管理', value: 'category.manage' },
   { label: '标签管理', value: 'tag.manage' },
   { label: '用户管理', value: 'user.manage' },
-  { label: '角色管理', value: 'role.manage' },
-  { label: '部门管理', value: 'department.manage' }
+  { label: '角色管理', value: 'role.manage' }
 ]
 
 // 创建权限代码到中文的映射对象

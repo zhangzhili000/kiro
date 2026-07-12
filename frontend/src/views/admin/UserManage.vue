@@ -17,7 +17,6 @@
             <el-tag :type="roleType(row.role)">{{ roleText(row.role) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="department_name" label="部门" />
         <el-table-column prop="is_active" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="row.is_active ? 'success' : 'danger'">
@@ -63,11 +62,6 @@
             <el-option label="普通用户" value="user" />
           </el-select>
         </el-form-item>
-        <el-form-item label="部门">
-          <el-select v-model="createForm.department_id" placeholder="请选择部门">
-            <el-option :label="dept.name" :value="dept.id" v-for="dept in departments" :key="dept.id" />
-          </el-select>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createModalVisible = false">取消</el-button>
@@ -94,11 +88,6 @@
             <el-option label="普通用户" value="user" />
           </el-select>
         </el-form-item>
-        <el-form-item label="部门">
-          <el-select v-model="editForm.department_id" placeholder="请选择部门">
-            <el-option :label="dept.name" :value="dept.id" v-for="dept in departments" :key="dept.id" />
-          </el-select>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editModalVisible = false">取消</el-button>
@@ -113,7 +102,6 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const users = ref([])
-const departments = ref([])
 const createModalVisible = ref(false)
 const editModalVisible = ref(false)
 
@@ -131,8 +119,7 @@ const createForm = ref({
   username: '',
   full_name: '',
   password: '',
-  role: 'user',
-  department_id: null
+  role: 'user'
 })
 
 const editForm = ref({
@@ -140,8 +127,7 @@ const editForm = ref({
   email: '',
   username: '',
   full_name: '',
-  role: '',
-  department_id: null
+  role: ''
 })
 
 const roleType = (role) => {
@@ -163,13 +149,8 @@ const fetchUsers = async () => {
     })
     if (response.ok) {
       const data = await response.json()
-      // 确保数据是数组
       if (Array.isArray(data)) {
-        // 添加部门名称
-        users.value = data.map(user => ({
-          ...user,
-          department_name: departments.value.find(d => d.id === user.department_id)?.name || '-'
-        }))
+        users.value = data
       } else {
         users.value = []
       }
@@ -183,38 +164,19 @@ const fetchUsers = async () => {
   }
 }
 
-const fetchDepartments = async () => {
-  try {
-    const response = await fetch('/api/v1/departments', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-      }
-    })
-    if (response.ok) {
-      departments.value = await response.json()
-    }
-  } catch (error) {
-    console.error('获取部门列表失败', error)
-  }
-}
-
-const openCreateModal = async () => {
-  // 打开弹窗前刷新部门列表
-  await fetchDepartments()
+const openCreateModal = () => {
   createForm.value = {
     email: '',
     username: '',
     full_name: '',
     password: '',
-    role: 'user',
-    department_id: null
+    role: 'user'
   }
   createModalVisible.value = true
 }
 
 const createUser = async () => {
   try {
-    // 表单验证
     const valid = await createFormRef.value.validate()
     if (!valid) {
       return
@@ -242,15 +204,12 @@ const createUser = async () => {
 }
 
 const openEditModal = async (user) => {
-  // 打开编辑弹窗前刷新部门列表
-  await fetchDepartments()
   editForm.value = {
     id: user.id,
     email: user.email,
     username: user.username,
     full_name: user.full_name,
-    role: user.role,
-    department_id: user.department_id
+    role: user.role
   }
   editModalVisible.value = true
 }
@@ -266,8 +225,7 @@ const updateUser = async () => {
       body: JSON.stringify({
         username: editForm.value.username,
         full_name: editForm.value.full_name,
-        role: editForm.value.role,
-        department_id: editForm.value.department_id
+        role: editForm.value.role
       })
     })
     if (response.ok) {
@@ -334,7 +292,6 @@ const deleteUser = async (user) => {
 }
 
 onMounted(async () => {
-  await fetchDepartments()
   await fetchUsers()
 })
 </script>

@@ -43,9 +43,9 @@
           <template #header>快捷操作</template>
           <div class="quick-actions">
             <el-button type="primary" @click="$router.push('/documents/new')">新建文档</el-button>
-            <el-button @click="$router.push('/documents')">文档列表</el-button>
-            <el-button @click="$router.push('/categories')">分类管理</el-button>
-            <el-button @click="$router.push('/tags')">标签管理</el-button>
+            <el-button @click="$router.push('/knowledge')">文档列表</el-button>
+            <el-button @click="$router.push({ path: '/knowledge', query: { tab: 'categories' } })">分类管理</el-button>
+            <el-button @click="$router.push({ path: '/knowledge', query: { tab: 'tags' } })">标签管理</el-button>
           </div>
         </el-card>
       </el-col>

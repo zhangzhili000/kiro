@@ -78,6 +78,7 @@ coverage.xml
 # Vite
 .vite/
 
+data/
 uploads/
 
 enterprise_knowledge_base_requirements.md

@@ -107,10 +107,17 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // 需要管理员权限的页面
-  if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    next('/')
-    return
+  // 需要管理员权限的页面：先刷新用户信息再判断角色
+  if (to.meta.requiresAdmin) {
+    try {
+      await authStore.getCurrentUser()
+    } catch (error) {
+      console.error('Failed to get current user:', error)
+    }
+    if (!authStore.isAdmin) {
+      next('/')
+      return
+    }
   }
 
   next()

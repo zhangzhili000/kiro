@@ -38,7 +38,7 @@
                     <el-select v-model="advancedFilter.permission" placeholder="选择权限" clearable>
                       <el-option label="公开" value="public" />
                       <el-option label="私有" value="private" />
-                      <el-option label="部门" value="department" />
+                    
                     </el-select>
                   </el-form-item>
                 </el-col>

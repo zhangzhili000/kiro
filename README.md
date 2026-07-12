@@ -65,7 +65,7 @@ cd kiro
 ```bash
 cd backend
 pip install -r requirements.txt
-python -m uvicorn kiro.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### 3. 启动前端服务

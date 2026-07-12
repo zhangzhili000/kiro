@@ -8,7 +8,6 @@
         <div class="user-info">
           <h2>{{ user?.username }}</h2>
           <p class="email">{{ user?.email }}</p>
-          <p class="department" v-if="user?.department_name">{{ user?.department_name }}</p>
         </div>
       </div>
       <el-button @click="editProfile" class="edit-btn">编辑资料</el-button>
@@ -50,9 +49,6 @@
           </el-form-item>
           <el-form-item label="姓名">
             <el-input v-model="userForm.full_name" disabled />
-          </el-form-item>
-          <el-form-item label="部门">
-            <el-input v-model="userForm.department" disabled />
           </el-form-item>
           <el-form-item label="职位">
             <el-input v-model="userForm.position" disabled />
@@ -109,7 +105,6 @@ const userForm = reactive({
   username: '',
   email: '',
   full_name: '',
-  department: '',
   position: '',
   created_at: ''
 })
@@ -140,7 +135,6 @@ const initUserForm = () => {
   userForm.username = user.value?.username || ''
   userForm.email = user.value?.email || ''
   userForm.full_name = user.value?.full_name || ''
-  userForm.department = user.value?.department_name || ''
   userForm.position = user.value?.position || ''
   userForm.created_at = user.value?.created_at ? new Date(user.value.created_at).toLocaleString() : ''
 }
@@ -202,12 +196,6 @@ onMounted(() => {
 .user-info .email {
   margin: 0 0 8px 0;
   color: #666;
-}
-
-.user-info .department {
-  margin: 0;
-  color: #409eff;
-  font-size: 14px;
 }
 
 .edit-btn {

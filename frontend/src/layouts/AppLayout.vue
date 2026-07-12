@@ -54,41 +54,13 @@
           router
         >
           <el-menu-item 
-            index="/" 
+            v-for="menu in filteredMenus" 
+            :key="menu.path"
+            :index="menu.path"
             :disabled="isAIChatLoading && isInAIChat"
           >
-            <el-icon><HomeFilled /></el-icon>
-            <template #title>首页</template>
-          </el-menu-item>
-          <el-menu-item 
-            index="/knowledge" 
-            :disabled="isAIChatLoading && isInAIChat"
-          >
-            <el-icon><Document /></el-icon>
-            <template #title>知识管理</template>
-          </el-menu-item>
-          <el-menu-item 
-            index="/collaboration" 
-            :disabled="isAIChatLoading && isInAIChat"
-          >
-            <el-icon><UserFilled /></el-icon>
-            <template #title>协作中心</template>
-          </el-menu-item>
-          <el-menu-item 
-            index="/statistics" 
-            :disabled="isAIChatLoading && isInAIChat"
-          >
-            <el-icon><DataAnalysis /></el-icon>
-            <template #title>统计分析</template>
-          </el-menu-item>
-          
-          <el-menu-item 
-            v-if="authStore.isAdmin" 
-            index="/admin" 
-            :disabled="isAIChatLoading && isInAIChat"
-          >
-            <el-icon><OfficeBuilding /></el-icon>
-            <template #title>系统管理</template>
+            <el-icon><component :is="getIcon(menu.icon)" /></el-icon>
+            <template #title>{{ menu.label }}</template>
           </el-menu-item>
         </el-menu>
         <!-- <div class="collapse-btn" @click="isCollapse = !isCollapse">
@@ -117,6 +89,7 @@ import {
   HomeFilled, Document, UserFilled, DataAnalysis, Help,
   OfficeBuilding, ArrowDown, DArrowLeft, DArrowRight
 } from '@element-plus/icons-vue'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -125,6 +98,26 @@ const notificationStore = useNotificationStore()
 
 const isCollapse = ref(true)
 const searchKeyword = ref('')
+
+const filteredMenus = computed(() => {
+  try {
+    const { usePluginStore } = require('@open/stores/plugin')
+    const pluginStore = usePluginStore()
+    return pluginStore.getMenusByRole(authStore.user?.role)
+  } catch {
+    return [
+      { path: '/', label: '首页', icon: 'HomeFilled' },
+      { path: '/knowledge', label: '知识管理', icon: 'Document' },
+      { path: '/collaboration', label: '协作中心', icon: 'UserFilled' },
+      { path: '/statistics', label: '统计分析', icon: 'DataAnalysis' },
+      ...(authStore.isAdmin ? [{ path: '/admin', label: '系统管理', icon: 'OfficeBuilding' }] : [])
+    ]
+  }
+})
+
+const getIcon = (iconName) => {
+  return ElementPlusIconsVue[iconName] || HomeFilled
+}
 
 // AI聊天加载状态
 const isAIChatLoading = ref(false)
@@ -146,7 +139,6 @@ const activeMenu = computed(() => {
   if (path.startsWith('/teams')) return '/collaboration'
   if (path.startsWith('/approvals')) return '/collaboration'
   if (path.startsWith('/templates')) return '/collaboration'
-  if (path.startsWith('/departments')) return '/admin'
   if (path.startsWith('/admin')) return '/admin'
   return path
 })

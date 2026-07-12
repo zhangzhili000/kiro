@@ -16,14 +16,6 @@ export const userAPI = {
   updateUserStatus: (userId, isActive) => request.put(`/admin/users/${userId}/status`, null, { params: { is_active: isActive } })
 }
 
-export const departmentAPI = {
-  getDepartments: () => request.get('/departments'),
-  getDepartmentTree: () => request.get('/departments/tree'),
-  createDepartment: (data) => request.post('/departments', data),
-  updateDepartment: (id, data) => request.put(`/departments/${id}`, data),
-  deleteDepartment: (id) => request.delete(`/departments/${id}`)
-}
-
 export const documentAPI = {
   getDocuments: (params) => request.get('/documents', { params }),
   getDocument: (id) => request.get(`/documents/${id}`),

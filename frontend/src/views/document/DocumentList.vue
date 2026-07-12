@@ -153,12 +153,12 @@ const handleDelete = async (id) => {
 }
 
 const permissionType = (permission) => {
-  const types = { public: 'success', private: 'info', department: 'warning' }
+  const types = { public: 'success', private: 'info' }
   return types[permission] || 'info'
 }
 
 const permissionText = (permission) => {
-  const texts = { public: '公开', private: '私有', department: '部门' }
+  const texts = { public: '公开', private: '私有' }
   return texts[permission] || permission
 }
 

@@ -21,16 +21,7 @@ DB_CONFIG = {
 
 # 建表SQL - 按依赖顺序排列
 CREATE_TABLES_SQL = """
--- 1. 部门表 (无依赖)
-CREATE TABLE IF NOT EXISTS departments (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    parent_id INTEGER REFERENCES departments(id),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. 用户表 (依赖 departments)
+-- 1. 用户表
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -40,7 +31,6 @@ CREATE TABLE IF NOT EXISTS users (
     avatar VARCHAR(500),
     phone VARCHAR(20),
     role VARCHAR(20) DEFAULT 'user',
-    department_id INTEGER REFERENCES departments(id),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -65,7 +55,7 @@ CREATE TABLE IF NOT EXISTS tags (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. 文档表 (依赖 users, categories, departments)
+-- 5. 文档表 (依赖 users, categories)
 CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
@@ -76,7 +66,6 @@ CREATE TABLE IF NOT EXISTS documents (
     author_id INTEGER REFERENCES users(id),
     category_id INTEGER REFERENCES categories(id),
     permission VARCHAR(20) DEFAULT 'public',
-    department_id INTEGER REFERENCES departments(id),
     status VARCHAR(20) DEFAULT 'draft',
     is_deleted BOOLEAN DEFAULT FALSE,
     deleted_at TIMESTAMP,
@@ -517,7 +506,7 @@ if __name__ == "__main__":
         print("✓ 数据库初始化完成!")
         print("=" * 50)
         print("\n已创建的表:")
-        print("  - users, departments, categories, tags")
+        print("  - users, categories, tags")
         print("  - documents, document_versions, document_tags")
         print("  - comments, user_favorites, document_likes")
         print("  - document_shares, notifications, audit_logs")

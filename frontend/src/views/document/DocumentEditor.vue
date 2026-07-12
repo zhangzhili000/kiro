@@ -88,31 +88,13 @@
           <el-radio-group v-model="form.permission">
             <el-radio value="public">公开</el-radio>
             <el-radio value="private">私有</el-radio>
-            <el-radio value="department">部门可见</el-radio>
             <el-radio value="team">团队可见</el-radio>
             <el-radio value="user">指定用户可见</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <!-- 部门权限设置 -->
-        <el-form-item label="部门权限">
-          <div class="permission-group">
-            <div v-for="(deptPerm, index) in form.departmentPermissions" :key="deptPerm.target_id" class="permission-item">
-              <span class="permission-target">{{ getDepartmentName(deptPerm.target_id) }}</span>
-              <el-checkbox-group v-model="form.departmentPermissions[index].actions">
-                <el-checkbox label="view">查看</el-checkbox>
-                <el-checkbox label="edit">编辑</el-checkbox>
-                <el-checkbox label="delete">删除</el-checkbox>
-              </el-checkbox-group>
-            </div>
-          </div>
-          <el-select v-model="selectedDepartment" placeholder="选择部门添加权限" @change="addDepartmentPermission" class="permission-select">
-            <el-option v-for="dept in availableDepartments" :key="dept.id" :label="dept.name" :value="dept.id" />
-          </el-select>
-        </el-form-item>
-
         <!-- 团队权限设置 -->
-        <el-form-item label="团队权限">
+        <el-form-item v-if="form.permission === 'team'" label="团队权限">
           <div class="permission-group">
             <div v-for="(teamPerm, index) in form.teamPermissions" :key="teamPerm.target_id" class="permission-item">
               <span class="permission-target">{{ getTeamName(teamPerm.target_id) }}</span>
@@ -129,7 +111,7 @@
         </el-form-item>
 
         <!-- 用户权限设置 -->
-        <el-form-item label="用户权限">
+        <el-form-item v-if="form.permission === 'user'" label="用户权限">
           <div class="permission-group">
             <div v-for="(userPerm, index) in form.userPermissions" :key="userPerm.target_id" class="permission-item">
               <span class="permission-target">{{ getUserName(userPerm.target_id) }}</span>
@@ -225,7 +207,6 @@ const form = reactive({
   category_id: null,
   tag_ids: [],
   permission: 'public',
-  departmentPermissions: [],
   teamPermissions: [],
   userPermissions: []
 })
@@ -234,10 +215,8 @@ const keywordInput = ref('')
 
 const categories = ref([])
 const tags = ref([])
-const departments = ref([])
 const teams = ref([])
 const users = ref([])
-const selectedDepartment = ref(null)
 const selectedTeam = ref(null)
 const selectedUser = ref(null)
 
@@ -248,12 +227,6 @@ const uploadUrl = computed(() => '/api/v1/ai/documents/upload')
 const uploadHeaders = computed(() => ({
   'Authorization': `Bearer ${localStorage.getItem('access_token')}`
 }))
-
-// 可用于添加权限的部门（尚未添加权限的部门）
-const availableDepartments = computed(() => {
-  const usedIds = form.departmentPermissions.map(p => p.target_id)
-  return departments.value.filter(d => !usedIds.includes(d.id))
-})
 
 // 可用于添加权限的团队（尚未添加权限的团队）
 const availableTeams = computed(() => {
@@ -266,14 +239,6 @@ const availableUsers = computed(() => {
   const usedIds = form.userPermissions.map(p => p.target_id)
   return users.value.filter(u => !usedIds.includes(u.id))
 })
-
-// 添加部门权限
-const addDepartmentPermission = (deptId) => {
-  if (deptId && !form.departmentPermissions.find(p => p.target_id === deptId)) {
-    form.departmentPermissions.push({ target_id: deptId, actions: ['view'] })
-  }
-  selectedDepartment.value = null
-}
 
 // 添加团队权限
 const addTeamPermission = (teamId) => {
@@ -295,12 +260,6 @@ const addUserPermission = (userId) => {
   selectedUser.value = null
 }
 
-// 获取部门名称
-const getDepartmentName = (deptId) => {
-  const dept = departments.value.find(d => d.id === deptId)
-  return dept ? dept.name : ''
-}
-
 // 获取团队名称
 const getTeamName = (teamId) => {
   const team = teams.value.find(t => t.id === teamId)
@@ -319,13 +278,6 @@ const fetchData = async () => {
   categories.value = categoryStore.categories
   tags.value = tagStore.tags
 
-  const deptResponse = await fetch('/api/v1/departments', {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-  })
-  if (deptResponse.ok) {
-    departments.value = await deptResponse.json()
-  }
-
   const teamResponse = await fetch('/api/v1/teams', {
     headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
   })
@@ -333,12 +285,12 @@ const fetchData = async () => {
     teams.value = await teamResponse.json()
   }
 
-  const userResponse = await fetch('/api/v1/admin/users', {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-  })
-  if (userResponse.ok) {
-    users.value = await userResponse.json()
-  }
+  const userResponse = await fetch('/api/v1/teams/users', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    if (userResponse.ok) {
+      users.value = await userResponse.json()
+    }
 
   if (isEdit.value) {
     const doc = await documentStore.fetchDocument(route.params.id)
@@ -355,13 +307,6 @@ const fetchData = async () => {
     if (permResponse.ok) {
       const permissions = await permResponse.json()
       
-      // 解析部门权限
-      const deptPerms = permissions.filter(p => p.permission_type === 'department')
-      form.departmentPermissions = deptPerms.map(p => ({
-        target_id: p.target_id,
-        actions: [p.action]
-      }))
-
       // 解析团队权限
       const teamPerms = permissions.filter(p => p.permission_type === 'team')
       form.teamPermissions = teamPerms.map(p => ({
@@ -639,17 +584,6 @@ const handleSave = async () => {
     // 构建权限数据
     const permissions = []
     
-    // 添加部门权限
-    for (const deptPerm of form.departmentPermissions) {
-      for (const action of deptPerm.actions) {
-        permissions.push({
-          permission_type: 'department',
-          target_id: deptPerm.target_id,
-          action: action
-        })
-      }
-    }
-    
     // 添加团队权限
     for (const teamPerm of form.teamPermissions) {
       for (const action of teamPerm.actions) {
@@ -683,7 +617,7 @@ const handleSave = async () => {
     })
 
     ElMessage.success('文档保存成功，索引正在后台构建中...')
-    router.push('/documents')
+    router.push('/knowledge')
     
   } catch (error) {
     ElMessage.error('保存失败: ' + (error.message || '未知错误'))

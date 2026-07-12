@@ -307,7 +307,7 @@
             <div class="ref-item-preview">{{ source.chunk_content }}</div>
             <div class="ref-item-meta">
               <span class="ref-item-chunk">第 {{ source.chunk_index + 1 }} 段</span>
-              <span class="ref-item-distance">相似度: {{ (1 - source.distance).toFixed(2) }}</span>
+              <span class="ref-item-distance">相似度: {{ (source.distance !== undefined ? source.distance : source.similarity).toFixed(2) }}</span>
             </div>
           </div>
         </div>
@@ -613,6 +613,8 @@ const sendMessage = async () => {
         await loadConversationHistory()
         isLoading.value = false
         loadingConversationId.value = null
+        // 触发AI聊天结束事件
+        window.dispatchEvent(new Event('ai-chat-end'))
       },
       onError: (error) => {
         const aiMessage = messages.value.find(m => m.id === aiMessageId)

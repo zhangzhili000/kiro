@@ -1,9 +1,6 @@
 <template>
   <div class="system-manage">
     <el-tabs v-model="activeTab" class="system-tabs">
-      <el-tab-pane label="部门管理" name="departments">
-        <DepartmentManage />
-      </el-tab-pane>
       <el-tab-pane label="用户管理" name="users">
         <UserManage />
       </el-tab-pane>
@@ -26,7 +23,6 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import DepartmentManage from '@/views/department/DepartmentManage.vue'
 import UserManage from '@/views/admin/UserManage.vue'
 import RoleManage from '@/views/admin/RoleManage.vue'
 import AIConfigManage from '@/views/admin/AIConfigManage.vue'
@@ -36,7 +32,7 @@ import AuditLog from '@/views/admin/AuditLog.vue'
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref('departments')
+const activeTab = ref('users')
 
 watch(() => route.query.tab, (newTab) => {
   if (newTab) {

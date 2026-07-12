@@ -1,7 +1,7 @@
 <template>
   <div class="document-detail">
     <div class="page-header">
-      <el-button @click="$router.push('/documents')" class="btn-back">
+      <el-button @click="$router.push('/knowledge')" class="btn-back">
         <el-icon><ArrowLeft /></el-icon>
         返回列表
       </el-button>
@@ -181,19 +181,6 @@
     >
       <div class="permissions-form">
         <el-tabs v-model="activePermissionTab">
-          <el-tab-pane label="部门权限" name="department">
-            <div class="permission-row">
-              <el-select v-model="selectedDepartment" placeholder="选择部门" style="width: 200px">
-                <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
-              </el-select>
-              <el-checkbox-group v-model="departmentActions">
-                <el-checkbox label="view">查看</el-checkbox>
-                <el-checkbox label="edit">编辑</el-checkbox>
-                <el-checkbox label="delete">删除</el-checkbox>
-              </el-checkbox-group>
-              <el-button type="primary" size="small" @click="addDepartmentPermission">添加</el-button>
-            </div>
-          </el-tab-pane>
           <el-tab-pane label="团队权限" name="team">
             <div class="permission-row">
               <el-select v-model="selectedTeam" placeholder="选择团队" style="width: 200px">
@@ -337,14 +324,11 @@ const copySuccess = ref(false)
 // 权限设置相关
 const permissionsDialogVisible = ref(false)
 const permissions = ref([])
-const departments = ref([])
 const teams = ref([])
 const users = ref([])
-const activePermissionTab = ref('department')
-const selectedDepartment = ref(null)
+const activePermissionTab = ref('team')
 const selectedTeam = ref(null)
 const selectedUser = ref(null)
-const departmentActions = ref(['view'])
 const teamActions = ref(['view'])
 const userActions = ref(['view'])
 const savingPermissions = ref(false)
@@ -414,7 +398,6 @@ const openPermissionsDialog = async () => {
   permissionsDialogVisible.value = true
   await Promise.all([
     fetchPermissions(),
-    fetchDepartments(),
     fetchTeams(),
     fetchUsers()
   ])
@@ -431,19 +414,6 @@ const fetchPermissions = async () => {
     }
   } catch (error) {
     console.error('获取权限失败:', error)
-  }
-}
-
-const fetchDepartments = async () => {
-  try {
-    const response = await fetch('/api/v1/departments', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-    })
-    if (response.ok) {
-      departments.value = await response.json()
-    }
-  } catch (error) {
-    console.error('获取部门失败:', error)
   }
 }
 
@@ -471,31 +441,6 @@ const fetchUsers = async () => {
   } catch (error) {
     console.error('获取用户失败:', error)
   }
-}
-
-const addDepartmentPermission = () => {
-  if (!selectedDepartment.value) {
-    ElMessage.warning('请选择部门')
-    return
-  }
-  if (departmentActions.value.length === 0) {
-    ElMessage.warning('请选择至少一个操作权限')
-    return
-  }
-  
-  const dept = departments.value.find(d => d.id === selectedDepartment.value)
-  departmentActions.value.forEach(action => {
-    pendingPermissions.value.push({
-      permission_type: 'department',
-      target_id: selectedDepartment.value,
-      action: action,
-      target_name: dept?.name || '',
-      is_new: true
-    })
-  })
-  
-  selectedDepartment.value = null
-  departmentActions.value = ['view']
 }
 
 const addTeamPermission = () => {
@@ -599,7 +544,7 @@ const getPermissionLabel = (perm) => {
 }
 
 const getPermissionTypeLabel = (type) => {
-  const labels = { department: '部门', team: '团队', user: '个人' }
+  const labels = { team: '团队', user: '个人' }
   return labels[type] || type
 }
 
