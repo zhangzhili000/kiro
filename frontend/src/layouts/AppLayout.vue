@@ -82,9 +82,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notification'
-import SearchInput from '@/components/common/SearchInput.vue'
+import { useAuthStore } from '@open/stores/auth'
+import { useNotificationStore } from '@open/stores/notification'
+import SearchInput from '@open/components/common/SearchInput.vue'
 import {
   HomeFilled, Document, UserFilled, DataAnalysis, Help,
   OfficeBuilding, ArrowDown, DArrowLeft, DArrowRight

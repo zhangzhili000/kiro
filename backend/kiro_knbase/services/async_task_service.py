@@ -10,6 +10,8 @@ from kiro_platform.core.database import SessionLocal
 from kiro_knbase.models.document import Document
 from kiro_knbase.services.model_service import DynamicAIClient
 from kiro_knbase.services.ai_service import faiss_service
+from kiro_knbase.services.document_chunker import get_default_chunker
+from kiro_knbase.services.retrieval_service import get_retrieval_service
 
 
 class AsyncTaskService:
@@ -101,26 +103,31 @@ class AsyncTaskService:
             }
             
             try:
-                content_for_embedding = f"{document.title}\n\n{document.content}" if document.content else document.title
+                # 使用语义分块器将文档切分成chunk
+                chunker = get_default_chunker()
                 
-                # 将文档切分成chunk（每500字符一个chunk）
-                chunks = []
-                if document.content and len(document.content) > 0:
-                    chunk_size = 500
-                    for i in range(0, len(document.content), chunk_size):
-                        chunk_content = document.content[i:i + chunk_size]
-                        chunks.append({
-                            "document_id": document.id,
-                            "document_title": document.title,
-                            "chunk_index": len(chunks),
-                            "chunk_content": chunk_content,
-                            "title": document.title,
-                            "content": chunk_content,
-                            "category_id": document.category_id,
-                            "author_id": document.author_id
-                        })
-                else:
-                    # 如果没有内容，至少添加一个chunk
+                # 确定文件类型（从文档信息中获取，默认按md处理）
+                file_type = "md"
+                if document.file_type:
+                    file_type = document.file_type
+                
+                # 执行语义分块
+                doc_chunks = chunker.chunk_document(
+                    content=document.content or "",
+                    document_title=document.title,
+                    document_id=document.id,
+                    file_type=file_type,
+                    metadata={
+                        "category_id": document.category_id,
+                        "author_id": document.author_id
+                    }
+                )
+                
+                # 转换为字典格式（兼容 FAISS 索引存储）
+                chunks = [chunk.to_dict() for chunk in doc_chunks]
+                
+                # 如果没有内容，至少添加一个标题块
+                if not chunks:
                     chunks.append({
                         "document_id": document.id,
                         "document_title": document.title,
@@ -133,16 +140,40 @@ class AsyncTaskService:
                     })
                 
                 # 为每个chunk生成embedding
+                # 拼接格式：文档标题 + 章节路径 + 块内容，提高检索准确性
                 embeddings = []
                 for chunk in chunks:
-                    chunk_text = f"{chunk['document_title']}\n\n{chunk['chunk_content']}"
+                    # 构建带上下文的 embedding 文本
+                    title_part = chunk.get("document_title", "")
+                    section_path = chunk.get("section_path", [])
+                    section_text = " > ".join(section_path) if section_path else ""
+                    content_part = chunk.get("chunk_content", "")
+                    
+                    if section_text:
+                        chunk_text = f"{title_part}\n\n{section_text}\n\n{content_part}"
+                    else:
+                        chunk_text = f"{title_part}\n\n{content_part}"
+                    
                     embedding_result = ai_client.get_embedding(chunk_text)
                     embedding = embedding_result.get("embedding", [])
                     embeddings.append(embedding)
                 
-                # 添加到索引
+                # 添加到向量索引
                 faiss_service.add_vectors(embeddings, chunks)
                 faiss_service.save_index()
+                
+                # 同时添加到 BM25 关键词索引
+                try:
+                    retrieval_service = get_retrieval_service()
+                    for chunk in chunks:
+                        retrieval_service.add_to_bm25_index(
+                            document_id=chunk.get("document_id", 0),
+                            chunk_index=chunk.get("chunk_index", 0),
+                            title=chunk.get("document_title", chunk.get("title", "")),
+                            content=chunk.get("chunk_content", chunk.get("content", ""))
+                        )
+                except Exception as bm25_error:
+                    print(f"DEBUG: BM25索引构建失败（不影响向量索引）: {str(bm25_error)}")
                 
                 chunk_count = len(chunks)
                 

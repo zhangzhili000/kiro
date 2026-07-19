@@ -123,7 +123,7 @@
 </template>
 
 <script setup>import { ref, reactive, onMounted, computed, watch } from 'vue';
-import { getKnowledgeGraphData, getNodeDetail, recommendDocuments } from '@/api/knowledgeGraph';
+import { getKnowledgeGraphData, getNodeDetail, recommendDocuments } from '@open/api/knowledgeGraph';
 const graphCanvas = ref(null);
 const canvasWidth = ref(1000);
 const canvasHeight = ref(600);

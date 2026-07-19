@@ -23,11 +23,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import DocumentList from '@/views/document/DocumentList.vue'
-import CategoryManage from '@/views/category/CategoryManage.vue'
-import TagManage from '@/views/tag/TagManage.vue'
-import SearchResult from '@/views/search/SearchResult.vue'
-import KnowledgeGraph from '@/views/knowledge/KnowledgeGraph.vue'
+import DocumentList from '@open/views/document/DocumentList.vue'
+import CategoryManage from '@open/views/category/CategoryManage.vue'
+import TagManage from '@open/views/tag/TagManage.vue'
+import SearchResult from '@open/views/search/SearchResult.vue'
+import KnowledgeGraph from '@open/views/knowledge/KnowledgeGraph.vue'
 
 const route = useRoute()
 const router = useRouter()

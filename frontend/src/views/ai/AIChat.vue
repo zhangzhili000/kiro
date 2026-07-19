@@ -319,7 +319,7 @@
 <script setup>
 import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAIService } from '@/stores/ai'
+import { useAIService } from '@open/stores/ai'
 import { ElMessageBox, ElMessage, ElInput } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 

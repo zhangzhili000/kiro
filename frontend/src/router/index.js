@@ -1,73 +1,73 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@open/stores/auth'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/auth/Login.vue'),
+    component: () => import('@open/views/auth/Login.vue'),
     meta: { requiresAuth: false }
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/auth/Register.vue'),
+    component: () => import('@open/views/auth/Register.vue'),
     meta: { requiresAuth: false }
   },
   {
     path: '/',
-    component: () => import('@/layouts/AppLayout.vue'),
+    component: () => import('@open/layouts/AppLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'Home',
-        component: () => import('@/views/ai/AIChat.vue')
+        component: () => import('@open/views/ai/AIChat.vue')
       },
       {
         path: 'documents/:id',
         name: 'DocumentDetail',
-        component: () => import('@/views/document/DocumentDetail.vue')
+        component: () => import('@open/views/document/DocumentDetail.vue')
       },
       {
         path: 'documents/new',
         name: 'DocumentCreate',
-        component: () => import('@/views/document/DocumentEditor.vue')
+        component: () => import('@open/views/document/DocumentEditor.vue')
       },
       {
         path: 'documents/:id/edit',
         name: 'DocumentEdit',
-        component: () => import('@/views/document/DocumentEditor.vue')
+        component: () => import('@open/views/document/DocumentEditor.vue')
       },
       {
         path: 'documents/trash',
         name: 'DocumentTrash',
-        component: () => import('@/views/document/DocumentTrash.vue')
+        component: () => import('@open/views/document/DocumentTrash.vue')
       },
       {
         path: 'profile',
         name: 'Profile',
-        component: () => import('@/views/profile/Profile.vue')
+        component: () => import('@open/views/profile/Profile.vue')
       },
       {
         path: 'knowledge',
         name: 'KnowledgeManage',
-        component: () => import('@/views/knowledge/KnowledgeManage.vue')
+        component: () => import('@open/views/knowledge/KnowledgeManage.vue')
       },
       {
         path: 'collaboration',
         name: 'CollaborationCenter',
-        component: () => import('@/views/collaboration/CollaborationCenter.vue')
+        component: () => import('@open/views/collaboration/CollaborationCenter.vue')
       },
       {
         path: 'statistics',
         name: 'StatisticsDashboard',
-        component: () => import('@/views/statistics/StatisticsDashboard.vue')
+        component: () => import('@open/views/statistics/StatisticsDashboard.vue')
       },
       {
         path: 'admin',
         name: 'SystemManage',
-        component: () => import('@/views/admin/SystemManage.vue'),
+        component: () => import('@open/views/admin/SystemManage.vue'),
         meta: { requiresAdmin: true }
       }
     ]

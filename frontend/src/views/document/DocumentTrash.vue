@@ -25,7 +25,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useDocumentStore } from '@/stores/document'
+import { useDocumentStore } from '@open/stores/document'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const documentStore = useDocumentStore()

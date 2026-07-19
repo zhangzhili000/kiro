@@ -49,7 +49,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
-import request from '@/api/request'
+import request from '@open/api/request'
 
 const props = defineProps({
   documentId: {

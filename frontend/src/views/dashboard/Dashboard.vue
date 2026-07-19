@@ -55,7 +55,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { documentAPI } from '@/api'
+import { documentAPI } from '@open/api'
 
 const stats = ref({
   documentCount: 0,

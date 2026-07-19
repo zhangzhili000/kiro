@@ -43,7 +43,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useTagStore } from '@/stores/tag'
+import { useTagStore } from '@open/stores/tag'
 import { ElMessage } from 'element-plus'
 
 const tagStore = useTagStore()

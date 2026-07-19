@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useCategoryStore } from '@/stores/category'
+import { useCategoryStore } from '@open/stores/category'
 import { ElMessage } from 'element-plus'
 
 const categoryStore = useCategoryStore()

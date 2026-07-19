@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Pagination from '@/components/common/Pagination.vue'
+import Pagination from '@open/components/common/Pagination.vue'
 
 describe('Pagination Component', () => {
   it('should render correctly', () => {

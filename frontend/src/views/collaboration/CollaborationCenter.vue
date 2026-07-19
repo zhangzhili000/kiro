@@ -23,11 +23,11 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import NotificationCenter from '@/views/notification/NotificationCenter.vue'
-import SubscriptionManage from '@/views/subscription/SubscriptionManage.vue'
-import TeamManage from '@/views/team/TeamManage.vue'
-import ApprovalManage from '@/views/approval/ApprovalManage.vue'
-import TemplateManage from '@/views/template/TemplateManage.vue'
+import NotificationCenter from '@open/views/notification/NotificationCenter.vue'
+import SubscriptionManage from '@open/views/subscription/SubscriptionManage.vue'
+import TeamManage from '@open/views/team/TeamManage.vue'
+import ApprovalManage from '@open/views/approval/ApprovalManage.vue'
+import TemplateManage from '@open/views/template/TemplateManage.vue'
 
 const route = useRoute()
 const router = useRouter()

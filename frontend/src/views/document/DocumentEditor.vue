@@ -165,13 +165,13 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useDocumentStore } from '@/stores/document'
-import { useCategoryStore } from '@/stores/category'
-import { useTagStore } from '@/stores/tag'
-import { useAIService } from '@/stores/ai'
+import { useDocumentStore } from '@open/stores/document'
+import { useCategoryStore } from '@open/stores/category'
+import { useTagStore } from '@open/stores/tag'
+import { useAIService } from '@open/stores/ai'
 import { ElMessage } from 'element-plus'
 import { Upload, Help, CircleCheck, Minus, Refresh } from '@element-plus/icons-vue'
-import request from '@/api/request'
+import request from '@open/api/request'
 
 const route = useRoute()
 const router = useRouter()

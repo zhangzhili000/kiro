@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import request from '@/api/request'
+import request from '@open/api/request'
 
 export const useAIService = defineStore('ai', () => {
   const conversations = ref([])
@@ -53,42 +53,59 @@ export const useAIService = defineStore('ai', () => {
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
+
+      const processEvent = (eventData) => {
+        try {
+          const data = JSON.parse(eventData)
+          
+          switch (data.type) {
+            case 'step':
+              onStep && onStep(data.data)
+              break
+            case 'search_result':
+              onSearchResult && onSearchResult(data.data)
+              break
+            case 'content':
+              onContent && onContent(data.data)
+              break
+            case 'question_analysis':
+              onQuestionAnalysis && onQuestionAnalysis(data.data)
+              break
+            case 'done':
+              onDone && onDone(data.data)
+              break
+            case 'error':
+              onError && onError(new Error(data.data.message))
+              break
+          }
+        } catch (e) {
+          console.error('Failed to parse SSE event:', e, eventData)
+        }
+      }
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              switch (data.type) {
-                case 'step':
-                  onStep && onStep(data.data)
-                  break
-                case 'search_result':
-                  onSearchResult && onSearchResult(data.data)
-                  break
-                case 'content':
-                  onContent && onContent(data.data)
-                  break
-                case 'question_analysis':
-                  onQuestionAnalysis && onQuestionAnalysis(data.data)
-                  break
-                case 'done':
-                  onDone && onDone(data.data)
-                  break
-                case 'error':
-                  onError && onError(new Error(data.data.message))
-                  break
-              }
-            } catch (e) {
-              // 忽略解析错误
+        if (done) {
+          if (buffer.trim()) {
+            const dataMatch = buffer.match(/data: (.+)/)
+            if (dataMatch) {
+              processEvent(dataMatch[1])
             }
+          }
+          break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+        
+        let eventBoundary
+        while ((eventBoundary = buffer.indexOf('\n\n')) !== -1) {
+          const rawEvent = buffer.slice(0, eventBoundary)
+          buffer = buffer.slice(eventBoundary + 2)
+          
+          const dataMatch = rawEvent.match(/data: (.+)/)
+          if (dataMatch) {
+            processEvent(dataMatch[1])
           }
         }
       }

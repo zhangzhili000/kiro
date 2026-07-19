@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { searchAPI } from '@/api'
+import { searchAPI } from '@open/api'
 
 export const useSearchStore = defineStore('search', {
   state: () => ({

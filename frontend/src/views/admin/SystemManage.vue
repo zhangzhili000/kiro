@@ -23,11 +23,11 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import UserManage from '@/views/admin/UserManage.vue'
-import RoleManage from '@/views/admin/RoleManage.vue'
-import AIConfigManage from '@/views/admin/AIConfigManage.vue'
-import ModelManage from '@/views/admin/ModelManage.vue'
-import AuditLog from '@/views/admin/AuditLog.vue'
+import UserManage from '@open/views/admin/UserManage.vue'
+import RoleManage from '@open/views/admin/RoleManage.vue'
+import AIConfigManage from '@open/views/admin/AIConfigManage.vue'
+import ModelManage from '@open/views/admin/ModelManage.vue'
+import AuditLog from '@open/views/admin/AuditLog.vue'
 
 const route = useRoute()
 const router = useRouter()

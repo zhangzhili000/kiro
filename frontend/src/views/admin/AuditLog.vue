@@ -22,7 +22,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { auditAPI } from '@/api'
+import { auditAPI } from '@open/api'
 
 const logs = ref([])
 const loading = ref(false)

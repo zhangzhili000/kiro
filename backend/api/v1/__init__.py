@@ -32,6 +32,7 @@ from kiro_knbase.api.v1.attachments import router as attachments_router
 from kiro_knbase.api.v1.document_permissions import router as document_permissions_router
 from kiro_knbase.api.v1.knowledge_graph import router as knowledge_graph_router
 from kiro_knbase.api.v1.templates import router as templates_router
+from kiro_knbase.api.v1.coze import router as coze_router
 
 # Include platform routers
 api_router.include_router(auth_router)
@@ -60,3 +61,4 @@ api_router.include_router(attachments_router)
 api_router.include_router(document_permissions_router)
 api_router.include_router(knowledge_graph_router)
 api_router.include_router(templates_router)
+api_router.include_router(coze_router)

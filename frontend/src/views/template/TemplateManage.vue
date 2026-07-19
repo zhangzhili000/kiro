@@ -74,7 +74,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import request from '@/api/request'
+import request from '@open/api/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const templates = ref([])

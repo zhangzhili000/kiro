@@ -62,7 +62,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as d3 from 'd3'
-import request from '@/api/request'
+import request from '@open/api/request'
 
 const graphContainer = ref(null)
 const svgRef = ref(null)

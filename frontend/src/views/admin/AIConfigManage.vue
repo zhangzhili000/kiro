@@ -207,8 +207,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useAIService } from '@/stores/ai'
-import { useAuthStore } from '@/stores/auth'
+import { useAIService } from '@open/stores/ai'
+import { useAuthStore } from '@open/stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const aiService = useAIService()

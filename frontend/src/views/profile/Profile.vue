@@ -94,7 +94,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@open/stores/auth'
 import { Document, Star, CircleCheck } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()

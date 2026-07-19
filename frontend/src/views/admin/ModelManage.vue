@@ -362,10 +362,10 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@open/stores/auth'
 import { ElMessage } from 'element-plus'
 import { Warning } from '@element-plus/icons-vue'
-import { modelAPI } from '@/api'
+import { modelAPI } from '@open/api'
 
 const authStore = useAuthStore()
 

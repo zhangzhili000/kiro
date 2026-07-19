@@ -271,8 +271,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useDocumentStore } from '@/stores/document'
-import { commentAPI } from '@/api'
+import { useDocumentStore } from '@open/stores/document'
+import { commentAPI } from '@open/api'
 import { ElMessage } from 'element-plus'
 import { 
   CopyDocument, 
@@ -296,7 +296,7 @@ import {
   Lock,
   Setting
 } from '@element-plus/icons-vue'
-import AttachmentManager from '@/components/AttachmentManager.vue'
+import AttachmentManager from '@open/components/AttachmentManager.vue'
 
 const route = useRoute()
 const router = useRouter()

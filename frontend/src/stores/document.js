@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { documentAPI } from '@/api'
+import { documentAPI } from '@open/api'
 
 export const useDocumentStore = defineStore('document', {
   state: () => ({

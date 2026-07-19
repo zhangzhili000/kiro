@@ -12,6 +12,7 @@ import time
 from kiro_platform.core.database import get_db
 from kiro_platform.core.config import settings
 from kiro_knbase.services.ai_service import faiss_service
+from kiro_knbase.services.retrieval_service import get_retrieval_service
 from kiro_knbase.services.model_service import DynamicAIClient
 from kiro_knbase.services.document_parser_service import document_parser
 from kiro_knbase.services.document_permission_service import get_documents_for_ai_query
@@ -370,24 +371,29 @@ async def search_vectors(
     current_user: User = Depends(get_current_user),
     ai_client: DynamicAIClient = Depends(get_ai_client)
 ):
-    """向量相似性检索"""
+    """向量相似性检索（多路召回：向量 + BM25关键词）"""
     try:
         # 获取查询向量
         embedding_result = ai_client.get_embedding(request.query)
         query_vector = embedding_result.get("embedding", [])
         
-        # 搜索FAISS索引
-        results = faiss_service.search(query_vector, request.top_k)
+        # 使用统一检索服务
+        retrieval_service = get_retrieval_service()
+        retrieval_results = retrieval_service.search(
+            query=request.query,
+            query_vector=query_vector,
+            top_k=request.top_k
+        )
         
         # 转换为响应格式
         search_results = []
-        for result in results:
+        for result in retrieval_results:
             search_results.append(VectorSearchResult(
-                document_id=result["document_id"],
-                document_title=result.get("document_title"),
-                chunk_content=result["chunk_content"],
-                distance=result.get("similarity", -1.0),
-                chunk_index=result["chunk_index"]
+                document_id=str(result.document_id),
+                document_title=result.document_title,
+                chunk_content=result.chunk_content,
+                distance=result.final_score,
+                chunk_index=result.chunk_index
             ))
         
         return VectorSearchResponse(results=search_results)
@@ -508,20 +514,22 @@ async def chat(
         # 如果需要基于知识库回答
         embedding_tokens = 0
         if use_knowledge_base and request.use_context:
-            # 获取相关文档（最多15份）
+            # 获取相关文档（多路召回：向量 + BM25关键词）
             embedding_result = ai_client.get_embedding(request.question)
             query_vector = embedding_result.get("embedding", [])
             embedding_usage = embedding_result.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
             embedding_tokens = embedding_usage.get("total_tokens", 0)
-            results = faiss_service.search(query_vector, top_k=15)
             
-            # 过滤相似度≥0.6的文档（余弦相似度，范围[-1,1]）
-            relevant_results = []
-            if results:
-                for r in results:
-                    similarity = r.get("similarity", -1.0)
-                    if similarity >= 0.6:
-                        relevant_results.append(r)
+            # 使用统一检索服务
+            retrieval_service = get_retrieval_service()
+            retrieval_results = retrieval_service.search(
+                query=request.question,
+                query_vector=query_vector,
+                top_k=15
+            )
+            
+            # 转换为字典格式，兼容后续代码
+            relevant_results = [r.to_dict() for r in retrieval_results]
             
             if relevant_results:
                 context = "\n\n".join([f"文档{idx+1}：\n{r.get('chunk_content', r.get('content', ''))}" for idx, r in enumerate(relevant_results)])
@@ -529,7 +537,7 @@ async def chat(
                     "document_id": r["document_id"],
                     "document_title": r.get("document_title", r.get("title", "")),
                     "chunk_index": r.get("chunk_index", 0),
-                    "distance": r.get("similarity", -1.0),
+                    "distance": r.get("final_score", r.get("similarity", -1.0)),
                     "chunk_content": r.get("chunk_content", r.get("content", ""))
                 } for r in relevant_results]
         
@@ -880,7 +888,7 @@ async def chat_stream(
                         "history_summary": history_summary
                     })
             
-            # 步骤 1: 理解提问
+            # 步骤 1: 理解提问（优化：并行执行 + 流式展示）
             step1_start = time.time()
             step_data = StepEventData(
                 step=1,
@@ -892,38 +900,89 @@ async def chat_stream(
             )
             yield f"data: {json.dumps({'type': StreamEventType.STEP, 'data': step_data.model_dump()})}\n\n"
             
-            # 详细分析问题（按照要求的步骤）
-            # 如果是多轮对话模式且有历史摘要，将其传递给问题分析
-            analysis_result = ai_client.analyze_question_detailed(request.question, history_summary)
-            needs_knowledge_base = analysis_result.get("needs_knowledge_base", True)
-            is_system_question = analysis_result.get("is_system_question", False)
-            suggested_strategy = analysis_result.get("suggested_strategy", answer_strategy)
+            # 快速判断：先用关键词做初步分析（毫秒级），用于并行启动 Embedding
+            quick_analysis = ai_client.quick_analyze_question(request.question)
             
-            # 获取步骤1的真实token使用量
-            step1_usage = analysis_result.get("_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
-            step1_tokens = step1_usage.get("total_tokens", 0)
+            # 构建检索查询：如果是多轮对话，结合历史对话摘要和当前问题
+            search_query = request.question
+            if history_summary:
+                search_query = f"基于以下对话历史，回答当前问题：\n历史对话：{history_summary}\n当前问题：{request.question}"
             
-            # 流式分析结果展示
-            question_analysis_result = f"问题类型：{analysis_result.get('question_type', '')}\n核心需求：{analysis_result.get('core_requirement', '')}\n需要知识库：{'是' if needs_knowledge_base else '否'}\n系统问题：{'是' if is_system_question else '否'}\n建议策略：{suggested_strategy}"
+            # 并行启动 Embedding（在后台线程中执行，和问题分析并行）
+            import threading
+            embedding_thread_result = [None]
+            embedding_thread_error = [None]
             
-            analysis_event = QuestionAnalysisEventData(
-                content=question_analysis_result,
-                is_complete=True
-            )
-            yield f"data: {json.dumps({'type': StreamEventType.QUESTION_ANALYSIS, 'data': analysis_event.model_dump()})}\n\n"
+            def get_embedding_async():
+                """后台线程：获取向量Embedding"""
+                try:
+                    if quick_analysis.get("needs_knowledge_base", True) and request.use_context:
+                        embedding_thread_result[0] = ai_client.get_embedding(search_query)
+                except Exception as e:
+                    embedding_thread_error[0] = e
+            
+            embedding_thread = threading.Thread(target=get_embedding_async)
+            embedding_thread.start()
+            
+            # 流式问题分析（打字机效果）
+            question_analysis_result = ""
+            step1_tokens = 0
+            analysis_result = dict(quick_analysis)  # 默认用快速分析结果
+            
+            try:
+                # 流式输出分析过程
+                stream_generator = ai_client.analyze_question_stream(request.question)
+                for text_chunk, is_last in stream_generator:
+                    if text_chunk:
+                        question_analysis_result += text_chunk
+                        analysis_event = QuestionAnalysisEventData(
+                            content=text_chunk,
+                            is_complete=False
+                        )
+                        yield f"data: {json.dumps({'type': StreamEventType.QUESTION_ANALYSIS, 'data': analysis_event.model_dump()})}\n\n"
+                
+                # 流式输出完成，标记为 complete
+                analysis_event = QuestionAnalysisEventData(
+                    content="",
+                    is_complete=True
+                )
+                yield f"data: {json.dumps({'type': StreamEventType.QUESTION_ANALYSIS, 'data': analysis_event.model_dump()})}\n\n"
+                
+                # 尝试从流式文本中提取结构化信息
+                # 由于流式分析返回的是自然语言，这里用关键词快速分析结果作为决策依据
+                # （流式分析主要用于展示，决策用结构化分析更可靠）
+                
+                # 估算 token 使用量（流式返回的文本字符数 / 2 作为粗略估算）
+                step1_tokens = max(50, len(question_analysis_result) // 2)
+                
+            except Exception as e:
+                # 流式分析失败，用快速分析结果兜底
+                print(f"Stream analysis failed: {e}")
+                # 直接展示快速分析结果
+                question_analysis_result = f"问题类型：{quick_analysis.get('question_type', '')}\n核心需求：{quick_analysis.get('core_requirement', '')}\n需要知识库：{'是' if quick_analysis.get('needs_knowledge_base', True) else '否'}\n系统问题：{'是' if quick_analysis.get('is_system_question', False) else '否'}\n建议策略：{quick_analysis.get('suggested_strategy', answer_strategy)}"
+                analysis_event = QuestionAnalysisEventData(
+                    content=question_analysis_result,
+                    is_complete=True
+                )
+                yield f"data: {json.dumps({'type': StreamEventType.QUESTION_ANALYSIS, 'data': analysis_event.model_dump()})}\n\n"
+            
+            # 使用快速分析结果做决策（更可靠）
+            needs_knowledge_base = quick_analysis.get("needs_knowledge_base", True)
+            is_system_question = quick_analysis.get("is_system_question", False)
+            suggested_strategy = quick_analysis.get("suggested_strategy", answer_strategy)
             
             step1_duration = int((time.time() - step1_start) * 1000)
             
             # 步骤 1 完成
             step_data.status = "completed"
-            step_data.description = f"问题分析完成（模型：{chat_model_name}，消耗：{step1_tokens} tokens）"
+            step_data.description = f"问题分析完成（模型：{chat_model_name}，消耗：约{step1_tokens} tokens）"
             step_data.tokens = step1_tokens
             yield f"data: {json.dumps({'type': StreamEventType.STEP, 'data': step_data.model_dump()})}\n\n"
             
             steps_info.append({
                 "step": 1,
                 "title": "理解提问",
-                "description": f"问题分析完成（模型：{chat_model_name}，消耗：{step1_tokens} tokens）",
+                "description": f"问题分析完成（模型：{chat_model_name}，消耗：约{step1_tokens} tokens）",
                 "duration": step1_duration,
                 "model": chat_model_name,
                 "tokens": step1_tokens,
@@ -934,6 +993,8 @@ async def chat_stream(
             
             # 检查是否被终止
             if active_conversations.get(conversation_uuid, {}).get("stop", False):
+                # 等待 Embedding 线程结束
+                embedding_thread.join(timeout=5)
                 yield f"data: {json.dumps({'type': StreamEventType.CONTENT, 'data': {'content': '对话已被用户终止。', 'is_first': True, 'is_last': True}})}\n\n"
                 pending_conversation.answer = "对话已被用户终止。"
                 pending_conversation.status = "completed"
@@ -972,22 +1033,32 @@ async def chat_stream(
                     answer_strategy = "system_info"
                 else:
                     # 非系统问题且不需要知识库，拒绝回答
+                    reject_answer = "抱歉，我只能回答与知识库相关的问题或关于系统本身的问题。"
                     content_data = ContentEventData(
-                        content="抱歉，我只能回答与知识库相关的问题或关于系统本身的问题。",
+                        content=reject_answer,
                         is_first=True,
                         is_last=True
                     )
                     yield f"data: {json.dumps({'type': StreamEventType.CONTENT, 'data': content_data.model_dump()})}\n\n"
                     
-                    # 发送完成信号
+                    # 更新对话记录
                     answer_time = get_beijing_time()
                     duration = int((time.time() - start_time) * 1000)
+                    pending_conversation.answer = reject_answer
+                    pending_conversation.status = "completed"
+                    pending_conversation.answer_time = answer_time
+                    pending_conversation.duration = duration
+                    pending_conversation.tokens = step1_tokens
+                    pending_conversation.processing_steps = steps_info
+                    pending_conversation.question_analysis = question_analysis_result
+                    db.commit()
                     
+                    # 发送完成信号
                     done_data = {
                         'type': StreamEventType.DONE,
                         'data': {
-                            'conversation_id': None,
-                            'conversation_uuid': None,
+                            'conversation_id': pending_conversation.id,
+                            'conversation_uuid': conversation_uuid,
                             'model': chat_model_name,
                             'tokens': step1_tokens,
                             'question_time': question_time.isoformat(),
@@ -1012,31 +1083,46 @@ async def chat_stream(
                 )
                 yield f"data: {json.dumps({'type': StreamEventType.STEP, 'data': step_data.model_dump()})}\n\n"
                 
-                # 构建检索查询：如果是多轮对话，结合历史对话摘要和当前问题
-                search_query = request.question
-                if history_summary:
-                    # 将历史对话摘要与当前问题融合，进行Query改写
-                    search_query = f"基于以下对话历史，回答当前问题：\n历史对话：{history_summary}\n当前问题：{request.question}"
+                # 等待并行 Embedding 的结果（如果已经启动了的话）
+                embedding_thread.join(timeout=60)  # 最多等60秒
                 
-                # 获取相关文档（最多15份）
-                embedding_result = ai_client.get_embedding(search_query)
-                query_vector = embedding_result.get("embedding", [])
-                step2_usage = embedding_result.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
-                step2_tokens = step2_usage.get("total_tokens", 0)
-                results = faiss_service.search(query_vector, top_k=15)
+                if embedding_thread_error[0]:
+                    raise embedding_thread_error[0]
                 
-                # 获取用户有权限访问的文档ID列表
+                if embedding_thread_result[0] is not None:
+                    # 使用并行计算的 Embedding 结果
+                    embedding_result_data = embedding_thread_result[0]
+                    query_vector = embedding_result_data.get("embedding", [])
+                    step2_usage = embedding_result_data.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
+                    step2_tokens = step2_usage.get("total_tokens", 0)
+                else:
+                    # 如果快速判断说不需要知识库，但现在又需要了，重新计算 Embedding
+                    embedding_result_data = ai_client.get_embedding(search_query)
+                    query_vector = embedding_result_data.get("embedding", [])
+                    step2_usage = embedding_result_data.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
+                    step2_tokens = step2_usage.get("total_tokens", 0)
+                
+                # 使用统一检索服务（多路召回 + 混合排序 + 动态阈值）
+                retrieval_service = get_retrieval_service()
                 accessible_docs = get_documents_for_ai_query(db, current_user.id)
                 accessible_doc_ids = set(str(doc.id) for doc in accessible_docs)
                 
-                # 过滤相似度≥0.6的文档（余弦相似度，范围[-1,1]）且有权限访问
+                retrieval_results = retrieval_service.search(
+                    query=search_query,
+                    query_vector=query_vector,
+                    top_k=15,
+                    accessible_doc_ids=accessible_doc_ids
+                )
+                
+                # 转换为字典格式，兼容后续代码
+                results = [r.to_dict() for r in retrieval_results]
+                
+                # 过滤有权限的文档（检索服务已过滤，这里做二次确认）
                 relevant_results = []
                 if results:
                     for r in results:
-                        similarity = r.get("similarity", -1.0)
-                        # 检查权限：用户必须有查看权限才能使用该文档
                         doc_id = str(r.get("document_id", ""))
-                        if similarity >= 0.6 and doc_id in accessible_doc_ids:
+                        if doc_id in accessible_doc_ids:
                             relevant_results.append(r)
                 
                 if relevant_results:

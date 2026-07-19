@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { subscriptionAPI } from '@/api'
+import { subscriptionAPI } from '@open/api'
 
 export const useSubscriptionStore = defineStore('subscription', {
   state: () => ({

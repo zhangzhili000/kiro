@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     # FAISS向量数据库配置
     FAISS_INDEX_PATH: str = "./data/faiss"
 
+    # Coze Studio 集成配置
+    COZE_ENABLED: bool = False
+    COZE_BASE_URL: str = "http://localhost:8888"
+    COZE_API_KEY: str = ""
+    COZE_SHARED_SECRET: str = "kiro-coze-shared-secret-change-in-production"
+    COZE_DEFAULT_AGENT_ID: str = ""
+    COZE_DEFAULT_WORKSPACE_ID: str = ""
+    COZE_TIMEOUT: int = 30
+
     class Config:
         env_file = ".env"
         case_sensitive = True

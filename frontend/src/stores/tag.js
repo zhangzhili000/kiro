@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { tagAPI } from '@/api'
+import { tagAPI } from '@open/api'
 
 export const useTagStore = defineStore('tag', {
   state: () => ({

@@ -41,7 +41,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useNotificationStore } from '@/stores/notification'
+import { useNotificationStore } from '@open/stores/notification'
 
 const notificationStore = useNotificationStore()
 const activeTab = ref('all')

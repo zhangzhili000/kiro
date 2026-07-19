@@ -344,6 +344,11 @@ class DynamicAIClient:
         client = self._get_client_for_model("chat")
         return client.analyze_question_stream(question)
     
+    def quick_analyze_question(self, question: str) -> dict:
+        """快速分析用户问题（基于关键词，毫秒级）"""
+        client = self._get_client_for_model("chat")
+        return client._default_analysis(question)
+    
     def compress_conversation_history(self, history: List[Dict[str, str]], max_length: int = 500) -> Dict[str, Any]:
         """
         压缩对话历史，使用LLM进行摘要
